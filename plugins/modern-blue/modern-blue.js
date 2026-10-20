@@ -951,6 +951,256 @@
 		});
 	}
 
+	/** phpMyAdmin-like tree: databases, their tables and the columns of the tables, loaded on demand */
+	function setupTree() {
+		const select = doc.querySelector('#dbs select[name="db"]');
+		const serverLink = menu && menu.querySelector('.mb-nav-server');
+		if (!select || !serverLink || isLogin || !window.fetch || !window.DOMParser) {
+			return;
+		}
+		const serverHref = serverLink.getAttribute('href');
+		const current = dbName();
+		const openKey = 'mb-tree:' + serverHref;
+		let open = {};
+		try {
+			open = JSON.parse(sessionStorage.getItem(openKey) || '{}');
+		} catch (e) {
+			open = {};
+		}
+		const remember = (id, isOpen) => {
+			if (isOpen) {
+				open[id] = 1;
+			} else {
+				delete open[id];
+			}
+			try {
+				sessionStorage.setItem(openKey, JSON.stringify(open));
+			} catch (e) {
+				// the tree just starts collapsed next time
+			}
+		};
+		const cache = {};
+		const load = url => {
+			if (!cache[url]) {
+				cache[url] = fetch(url, {credentials: 'same-origin'}).then(response => response.text()).then(html => new DOMParser().parseFromString(html, 'text/html'));
+			}
+			return cache[url];
+		};
+
+		const tree = el('ul', {'class': 'mb-tree', 'role': 'tree', 'aria-label': t('Databases')});
+
+		/** Create a node: toggle, icon, link and a group of children filled by fill() when opened */
+		const node = (kind, label, href, id, fill, title) => {
+			const li = el('li', {'class': 'mb-tree-node mb-tree-' + kind, 'role': 'treeitem'});
+			const row = el('div', {'class': 'mb-tree-row'});
+			const toggle = el('button', {'type': 'button', 'class': 'mb-tree-toggle', 'tabindex': '-1', 'aria-hidden': 'true'});
+			const link = el(href ? 'a' : 'span', {'class': 'mb-tree-link'});
+			if (href) {
+				link.setAttribute('href', href);
+			}
+			link.title = title || label;
+			link.appendChild(el('span', {'class': 'mb-tree-icon'}));
+			link.appendChild(el('span', {'class': 'mb-tree-label'}, label));
+			row.appendChild(fill ? toggle : el('span', {'class': 'mb-tree-spacer'}));
+			row.appendChild(link);
+			li.appendChild(row);
+			if (fill) {
+				const group = el('ul', {'class': 'mb-tree-group', 'role': 'group'});
+				group.hidden = true;
+				li.appendChild(group);
+				li.setAttribute('aria-expanded', 'false');
+				let filled = false;
+				li.mbToggle = (state, animated) => {
+					const expand = (state === undefined ? group.hidden : state);
+					group.hidden = !expand;
+					li.setAttribute('aria-expanded', expand);
+					remember(id, expand);
+					if (expand && !filled) {
+						filled = true;
+						group.appendChild(el('li', {'class': 'mb-tree-loading'}, t('Loading…')));
+						Promise.resolve(fill(group)).then(() => {
+							const loading = group.querySelector('.mb-tree-loading');
+							if (loading) {
+								loading.remove();
+							}
+							if (!group.children.length) {
+								group.appendChild(el('li', {'class': 'mb-tree-empty'}, t('No items')));
+							}
+							if (animated) {
+								animate(group.children, {opacity: [0, 1], x: [-8, 0]}, {duration: 0.22, delay: stagger(0.015)});
+							}
+							filterTree();
+						}, () => {
+							group.textContent = '';
+							group.appendChild(el('li', {'class': 'mb-tree-empty'}, t('Unable to load')));
+						});
+					} else if (expand && animated) {
+						animate(group, {opacity: [0, 1], y: [-4, 0]}, {duration: 0.2});
+					}
+				};
+				toggle.addEventListener('click', event => {
+					event.preventDefault();
+					li.mbToggle(undefined, true);
+				});
+				if (open[id]) {
+					li.mbToggle(true, false);
+				}
+			}
+			return li;
+		};
+
+		/** Columns of a table read from its structure page */
+		const columns = href => group => load(href).then(page => {
+			Array.prototype.forEach.call(page.querySelectorAll('.mb-structure tbody tr, #content .scrollable table tbody tr'), tr => {
+				const th = tr.querySelector('th');
+				if (!th || group.querySelector('[data-column="' + th.textContent.replace(/"/g, '') + '"]')) {
+					return;
+				}
+				const isKey = !!th.querySelector('.mb-badge');
+				const name = (th.firstChild ? th.firstChild.textContent : th.textContent).trim();
+				const cells = tr.querySelectorAll('td');
+				const type = (cells.length > 1 ? cells[1] : cells[0]);
+				const item = node(isKey ? 'key' : 'column', name, null, null, null, name + (type ? ' ' + type.textContent.trim() : ''));
+				item.setAttribute('data-column', name);
+				if (type) {
+					item.querySelector('.mb-tree-link').appendChild(el('span', {'class': 'mb-tree-type'}, type.textContent.trim().replace(/ unsigned$/, '').replace(/^character varying/, 'varchar')));
+				}
+				group.appendChild(item);
+			});
+		});
+
+		/** Tables of a database read from the table list in its menu */
+		const tablesFrom = (list, db, group) => {
+			Array.prototype.forEach.call(list ? list.querySelectorAll(':scope > li') : [], li => {
+				const name = li.querySelector('a:not(.select), span');
+				const browse = li.querySelector('a.select');
+				if (!name) {
+					return;
+				}
+				const structure = (name.matches('a') ? name.getAttribute('href') : null);
+				const isView = name.classList.contains('view');
+				const href = (browse ? browse.getAttribute('href') : structure);
+				const item = node(isView ? 'view' : 'table', name.textContent, href, db + '/' + name.textContent, structure ? columns(structure) : null, t('Select data') + ': ' + name.textContent);
+				if (name.classList.contains('active') || (browse && browse.classList.contains('active'))) {
+					item.classList.add('mb-tree-active');
+				}
+				if (structure) {
+					const extra = el('a', {'class': 'mb-tree-extra', 'href': structure, 'title': t('Show structure') + ': ' + name.textContent, 'aria-label': t('Show structure')});
+					item.querySelector('.mb-tree-row').appendChild(extra);
+				}
+				group.appendChild(item);
+			});
+			const create = (list || doc).ownerDocument === doc ? doc.querySelector('#menu p.links a[href$="&create="]') : null;
+			if (create && db === current) {
+				group.insertBefore(node('new', t('New table'), create.getAttribute('href'), null, null), group.firstChild);
+			}
+		};
+
+		const names = [];
+		Array.prototype.forEach.call(select.options, option => {
+			if (option.value !== '' || option.textContent !== '') {
+				names.push(option.value || option.textContent);
+			}
+		});
+		const create = doc.querySelector('#content p.links a[href$="&database="]');
+		names.forEach(db => {
+			const href = serverHref + '&db=' + encodeURIComponent(db);
+			const item = node('db', db, href, db, group => {
+				if (db === current) {
+					tablesFrom(doc.getElementById('tables'), db, group);
+					return null;
+				}
+				return load(href).then(page => tablesFrom(page.getElementById('tables'), db, group));
+			});
+			if (db === current) {
+				item.classList.add('mb-tree-current');
+				if (item.mbToggle && item.getAttribute('aria-expanded') !== 'true') {
+					item.mbToggle(true, false);
+				}
+			}
+			tree.appendChild(item);
+		});
+		if (body.classList.contains('mb-page-server') && create) {
+			tree.insertBefore(node('new', t('New database'), create.getAttribute('href'), null, null), tree.firstChild);
+		}
+
+		const wrap = el('div', {'class': 'mb-tree-wrap'});
+		const head = el('div', {'class': 'mb-sb-label mb-sb-label-tree'});
+		head.appendChild(el('span', {}, t('Databases')));
+		head.appendChild(el('span', {'class': 'mb-sb-count'}, String(names.length)));
+		const collapseAll = el('button', {'type': 'button', 'class': 'mb-tree-collapse-all', 'title': t('Collapse all'), 'aria-label': t('Collapse all')});
+		collapseAll.addEventListener('click', () => {
+			Array.prototype.forEach.call(tree.querySelectorAll('.mb-tree-node[aria-expanded="true"]'), li => li.mbToggle(false, false));
+		});
+		head.appendChild(collapseAll);
+		menu.appendChild(head);
+		wrap.appendChild(tree);
+		menu.appendChild(wrap);
+		body.classList.add('mb-has-tree');
+
+		// the search filters the tree: a database stays when its name or one of its loaded tables matches
+		const input = doc.getElementById('mb-table-filter');
+		const filterTree = () => {
+			const needle = (input ? input.value.trim().toLowerCase() : '');
+			Array.prototype.forEach.call(tree.querySelectorAll(':scope > .mb-tree-db'), db => {
+				const dbMatch = db.querySelector('.mb-tree-label').textContent.toLowerCase().indexOf(needle) !== -1;
+				let any = false;
+				Array.prototype.forEach.call(db.querySelectorAll('.mb-tree-table, .mb-tree-view'), table => {
+					const match = needle === '' || dbMatch || table.querySelector('.mb-tree-label').textContent.toLowerCase().indexOf(needle) !== -1;
+					table.hidden = !match;
+					any = any || (match && needle !== '');
+				});
+				db.hidden = !(needle === '' || dbMatch || any);
+			});
+		};
+		if (input) {
+			input.placeholder = t('Search databases & tables…');
+			input.addEventListener('input', filterTree);
+		}
+
+		// keyboard: arrows move between rows, right/left open and close
+		tree.addEventListener('keydown', event => {
+			const link = event.target.closest('.mb-tree-link');
+			if (!link) {
+				return;
+			}
+			const rows = Array.prototype.filter.call(tree.querySelectorAll('.mb-tree-link'), a => a.offsetParent);
+			const li = link.closest('.mb-tree-node');
+			const index = rows.indexOf(link);
+			if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				const next = rows[index + (event.key === 'ArrowDown' ? 1 : -1)];
+				if (next) {
+					next.focus();
+				}
+			} else if (event.key === 'ArrowRight' && li.mbToggle) {
+				li.mbToggle(true, true);
+			} else if (event.key === 'ArrowLeft') {
+				if (li.mbToggle && li.getAttribute('aria-expanded') === 'true') {
+					li.mbToggle(false, true);
+				} else {
+					const parent = li.parentNode.closest('.mb-tree-node');
+					if (parent) {
+						parent.querySelector('.mb-tree-link').focus();
+					}
+				}
+			} else {
+				return;
+			}
+			event.preventDefault();
+		});
+		Array.prototype.forEach.call(tree.querySelectorAll('span.mb-tree-link'), span => span.tabIndex = 0);
+		const active = tree.querySelector('.mb-tree-active') || tree.querySelector('.mb-tree-current');
+		if (active) {
+			setTimeout(() => {
+				const box = doc.getElementById('foot');
+				const top = active.getBoundingClientRect().top - box.getBoundingClientRect().top;
+				if (top > box.clientHeight - 120) {
+					box.scrollTop += top - box.clientHeight / 2;
+				}
+			}, 50);
+		}
+	}
+
 	/** Name of the current database from the URL */
 	function dbName() {
 		const match = /[?&]db=([^&]*)/.exec(location.search);
@@ -1067,6 +1317,7 @@
 			wrapTables();
 			setupTopbar();
 			setupSidebar();
+			setupTree();
 			setupCta();
 			setupSidebarFilter();
 			setupListFilter();

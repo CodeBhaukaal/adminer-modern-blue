@@ -50,7 +50,7 @@ class AdminerModernBlue extends Adminer\Plugin {
 
 	function head($dark = null) {
 		$strings = array();
-		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK', 'Edit', 'Copy', 'Delete', 'Browse', 'Insert', 'Empty', 'Drop', 'Tip: double-click a cell to edit it, then press Save.', 'Export', 'Color theme', 'Saved in this browser.', 'Ocean Blue', 'Emerald', 'Violet', 'Sunset', 'Rose', 'Graphite', 'Daylight', 'Midnight (dark)', 'Database', 'Database & schema', 'Tools', 'Tables', 'Recent', 'Press', 'to search tables', 'Collapse sidebar', 'Expand sidebar') as $key) {
+		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK', 'Edit', 'Copy', 'Delete', 'Browse', 'Insert', 'Empty', 'Drop', 'Tip: double-click a cell to edit it, then press Save.', 'Export', 'Color theme', 'Saved in this browser.', 'Ocean Blue', 'Emerald', 'Violet', 'Sunset', 'Rose', 'Graphite', 'Daylight', 'Midnight (dark)', 'Database', 'Database & schema', 'Tools', 'Tables', 'Recent', 'Press', 'to search tables', 'Collapse sidebar', 'Expand sidebar', 'Databases', 'Loading…', 'No items', 'Unable to load', 'New table', 'New database', 'Collapse all', 'Search databases & tables…') as $key) {
 			$strings[$key] = $this->lang($key);
 		}
 		// mb-preload hides the workspace until modern-blue.js animates it in, CSS reveals it anyway if the script fails
@@ -263,6 +263,14 @@ class AdminerModernBlue extends Adminer\Plugin {
 			'to search tables' => 'टेबल खोजने के लिए',
 			'Collapse sidebar' => 'साइडबार छोटा करें',
 			'Expand sidebar' => 'साइडबार बड़ा करें',
+			'Databases' => 'डेटाबेस',
+			'Loading…' => 'लोड हो रहा है…',
+			'No items' => 'कुछ नहीं',
+			'Unable to load' => 'लोड नहीं हुआ',
+			'New table' => 'नई टेबल',
+			'New database' => 'नया डेटाबेस',
+			'Collapse all' => 'सब बंद करें',
+			'Search databases & tables…' => 'डेटाबेस और टेबल खोजें…',
 			'Column' => 'कॉलम',
 			'Type' => 'प्रकार',
 			'Collation' => 'कोलेशन',

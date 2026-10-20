@@ -21,6 +21,7 @@ Same Adminer engine underneath: every query, login, export and import still goes
 ## ✨ Highlights
 
 - **🎨 8 colour templates** – Ocean Blue, Emerald, Violet, Sunset, Rose, Graphite, Daylight (light sidebar) and Midnight (full dark mode). Pick one from the palette button in the top bar (also on the login page); the choice is saved in the browser and applied before the page paints, so there is no flash.
+- **🌳 phpMyAdmin-style tree navigation** – every database on the server in an expandable tree: *database → tables & views → columns* (with types and a 🔑 for primary keys). Other databases and columns load on demand, open nodes are remembered, the search filters databases and tables, arrow keys move through the tree, and a *New table* / *New database* node sits where you need it.
 - **Smart sidebar** – section labels (Database, Tools, Tables with a count), live table search with the <kbd>/</kbd> shortcut, **recently opened tables**, a hover pill following the mouse, a clear active-table marker, a sticky header, and a **collapse button** that turns the sidebar into a slim icon rail (remembered per browser).
 - **Dashboard layout** – sidebar with the server link, database (and schema) switcher and table list; a top bar with breadcrumb and the main actions.
 - **Login card** – centered card on a soft blue backdrop, labels above the fields, clear red error box.
@@ -39,6 +40,12 @@ Same Adminer engine underneath: every query, login, export and import still goes
 - **Motion animations** – staggered page entrance, row cascade, spring login card, sliding tab indicator, a hover pill following the sidebar tables, button ripples and press springs, error shake, count-up numbers, scroll reveal, top loading bar, animated mobile drawer.
 - **Responsive on every screen** – checked automatically at 1440, 1024, 768, 390 and 320 px on 11 screens with zero horizontal overflow; wide tables scroll inside their own box, action buttons shrink to icons, forms stack on phones, and the sidebar becomes a drawer with backdrop and <kbd>Esc</kbd> to close.
 - **Accessible & light** – respects *reduce motion*, keeps keyboard navigation, works without JavaScript, no external fonts, icons or CDN.
+
+## 🌳 Tree navigation
+
+| Desktop | Mobile |
+|---|---|
+| <img src="docs/modern-blue/tree.png" alt="Tree navigation"> | <img src="docs/modern-blue/tree-mobile.png" alt="Tree on mobile" width="260"> |
 
 ## 🎨 Colour templates
 
@@ -146,6 +153,7 @@ All colors are CSS variables at the top of [`modern-blue.css`](plugins/modern-bl
 | Insert, edit, delete rows | ✅ | ✅ |
 | Row Edit / Copy / Delete buttons, double-click inline edit | ✅ | ✅ |
 | Table Browse / Insert / Alter / Empty / Drop buttons | ✅ | ✅ |
+| Tree: databases → tables → columns, lazy loading, remembered state | ✅ | ✅ |
 | SQL command, results, red errors | ✅ | ✅ |
 | Export (SQL) | ✅ | ✅ |
 | Import (SQL file) | ✅ | – |
