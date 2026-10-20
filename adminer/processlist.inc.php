@@ -1,0 +1,64 @@
+<?php
+namespace Adminer;
+
+if (support("kill")) {
+	if ($_POST && !$error) {
+		$killed = 0;
+		foreach ((array) $_POST["kill"] as $val) {
+			if (adminer()->killProcess($val)) {
+				$killed++;
+			}
+		}
+		queries_redirect(ME . "processlist=", lang('%d process(es) have been killed.', $killed), $killed || !$_POST["kill"]);
+	}
+}
+
+page_header(lang('Process list'), $error);
+?>
+
+<form action="" method="post">
+<div class="scrollable">
+<table class="nowrap checkable odds"<?php echo on('click', 'tableClick') . on('dblclick', 'tableClick'); ?>>
+<?php
+// HTML valid because there is always at least one process
+$i = -1;
+foreach (adminer()->processList() as $i => $row) {
+	if (!$i) {
+		echo "<thead><tr lang='en'>" . (support("kill") ? "<td class='hover'>" : "");
+		foreach ($row as $key => $val) {
+			echo "<th>$key" . doc_link(array(
+				'sql' => "show-processlist.html#processlist_" . strtolower($key),
+				'pgsql' => "monitoring-stats.html#PG-STAT-ACTIVITY-VIEW",
+				'oracle' => "refrn/V-SESSION.html",
+			));
+		}
+		echo "<tbody>\n";
+	}
+	echo "<tr>" . (support("kill") ? "<td class='hover'>" . checkbox("kill[]", $row[JUSH == "sql" ? "Id" : "pid"], 0) : "");
+	foreach ($row as $key => $val) {
+		echo "<td>" . ($val != "" && (
+			(JUSH == "sql" && $key == "Info" && preg_match("~Query|Killed~", $row["Command"])) ||
+			(JUSH == "pgsql" && $key == "query") ||
+			(JUSH == "oracle" && $key == "sql_text"))
+			? "<code class='jush-" . JUSH . "' data-full='" . h($val) . "'>" . shorten_utf8($val, 100, "</code>")
+				. ' <a href="' . h(($row["db"] != "" ? preg_replace('~&db=[^&]*~', '', ME) . "db=" . url_escape($row["db"]) . "&" : ME) . "sql=" . url_escape($val)) . '">' . lang('Clone') . '</a>'
+				. ' ' . copy_icon()
+			: h($val)
+		);
+	}
+	echo "\n";
+}
+?>
+</table>
+</div>
+<p>
+<?php
+echo script("copyCode(qsl('table'));");
+if (support("kill")) {
+	echo format_number($i + 1) . "/" . lang('%d in total', max_connections());
+	echo "<p><input type='submit' value='" . lang('Kill') . "'>\n";
+}
+echo input_token();
+?>
+</form>
+<?php echo script("tableCheck();"); ?>

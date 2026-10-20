@@ -1,0 +1,8 @@
+/adminer/modern-blue-password.php
+/adminer*.php
+/editor*.php
+/vendor/
+/node_modules/
+/.claude/
+/CLAUDE.md
+/plan.md

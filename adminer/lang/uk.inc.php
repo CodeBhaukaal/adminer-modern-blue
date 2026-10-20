@@ -1,0 +1,370 @@
+<?php
+namespace Adminer;
+
+Lang::$translations = array(
+	'System' => 'Система Бази Даних', // label for database system selection (MySQL, SQLite, ...)
+	'Server' => 'Сервер',
+	'Username' => 'Користувач',
+	'Password' => 'Пароль',
+	'Permanent login' => 'Пам\'ятати сесію',
+	'Login' => 'Увійти',
+	'Logout' => 'Вийти',
+	'Logged in as: %s' => 'Ви увійшли як: %s',
+	'Logout successful.' => 'Ви вдало вийшли з системи.',
+	'Invalid credentials.' => 'Неправильні дані входу.',
+	'Language' => 'Мова',
+	'Invalid CSRF token. Submit the form again.' => 'Недійсний CSRF токен. Надішліть форму ще раз.',
+	'No extension' => 'Нема розширень',
+	'None of the supported PHP extensions (%s) are available.' => 'Жодне з PHP-розширень (%s), що підтримуються, не доступне.',
+	'Session support must be enabled.' => 'Сесії повинні бути дозволені.',
+	'Session expired. Please log in again.' => 'Сесія закінчилась, будь ласка, увійдіть в систему знову.',
+	'%s version: %s through PHP extension %s' => 'Версія %s: %s з PHP-розширенням %s',
+	'Refresh' => 'Оновити',
+
+	'ltr' => 'ltr', // text direction - 'ltr' or 'rtl'
+
+	'Privileges' => 'Привілеї',
+	'Create user' => 'Створити користувача',
+	'User has been dropped.' => 'Користувача було видалено.',
+	'User has been altered.' => 'Користувача було змінено.',
+	'User has been created.' => 'Користувача було створено.',
+	'Hashed' => 'Хешовано',
+	'Column' => 'Колонка',
+	'Routine' => 'Процедура',
+	'Grant' => 'Дозволити',
+	'Revoke' => 'Заборонити',
+
+	'Process list' => 'Перелік процесів',
+	'%d process(es) have been killed.' => array('Було завершено %d процес.', 'Було завершено %d процеси.', 'Було завершёно %d процесів.'),
+	'Kill' => 'Завершити процес',
+
+	'Variables' => 'Змінні',
+	'Status' => 'Статус',
+
+	'SQL command' => 'SQL запит',
+	'%d query(ies) executed OK.' => array('%d запит виконано успішно.', '%d запити виконано успішно.', '%d запитів виконано успішно.'),
+	'Query executed OK, %d row(s) affected.' => array('Запит виконано успішно, змінено %d рядок.', 'Запит виконано успішно, змінено %d рядки.', 'Запит виконано успішно, змінено %d рядків.'),
+	'No commands to execute.' => 'Нема запитів до виконання.',
+	'Error in query' => 'Помилка в запиті',
+	'Execute' => 'Виконати',
+	'Stop on error' => 'Зупинитись при помилці',
+	'Show only errors' => 'Показувати тільки помилки',
+	'%.3f s' => '%.3f s', // sprintf() format for time of the command
+	'History' => 'Історія',
+	'Clear' => 'Очистити',
+	'Edit all' => 'Редагувати все',
+
+	'File upload' => 'Завантажити файл',
+	'From server' => 'З сервера',
+	'Webserver file %s' => 'Файл %s на вебсервері',
+	'Run file' => 'Запустити файл',
+	'File does not exist.' => 'Файл не існує.',
+	'File uploads are disabled.' => 'Завантаження файлів заборонене.',
+	'Unable to upload a file.' => 'Неможливо завантажити файл.',
+	'Maximum allowed file size is %sB.' => 'Максимально допустимий розмір файлу %sБ.',
+	'The POST data is too large. Reduce the data or increase the %s configuration directive.' => 'Занадто великий об\'єм POST-даних. Зменшіть об\'єм або збільшіть параметр директиви %s конфигурації.',
+
+	'Export' => 'Експорт',
+	'Output' => 'Вихідні дані',
+	'open' => 'відкрити',
+	'save' => 'зберегти',
+	'Format' => 'Формат',
+	'Data' => 'Дані',
+
+	'Database' => 'База даних',
+	'Use' => 'Обрати',
+	'Select database' => 'Обрати базу даних',
+	'Database has been dropped.' => 'Базу даних було видалено.',
+	'Databases have been dropped.' => 'Бази даних були видалені.',
+	'Database has been created.' => 'Базу даних було створено.',
+	'Database has been renamed.' => 'Базу даних було переіменовано.',
+	'Database has been altered.' => 'Базу даних було змінено.',
+	'Alter database' => 'Змінити базу даних',
+	'Create database' => 'Створити базу даних',
+	'Database schema' => 'Схема бази даних',
+
+	'Permanent link' => 'Постійне посилання', // link to current database schema layout
+
+	'#,##0' => '# ##0',
+	'0123456789' => '0123456789',
+	'Engine' => 'Рушій',
+	'Collation' => 'Співставлення',
+	'Data Length' => 'Об\'єм даних',
+	'Index Length' => 'Об\'єм індексів',
+	'Data Free' => 'Вільне місце',
+	'Rows' => 'Рядків',
+	'%d in total' => '%d всього',
+	'Analyze' => 'Аналізувати',
+	'Optimize' => 'Оптимізувати',
+	'Check' => 'Перевірити',
+	'Repair' => 'Виправити',
+	'Truncate' => 'Очистити',
+	'Tables have been truncated.' => 'Таблиці було очищено.',
+	'Move to another database' => 'Перенести до іншої бази даних',
+	'Move' => 'Перенести',
+	'Tables have been moved.' => 'Таблиці було перенесено.',
+	'Copy' => 'копіювати',
+	'Tables have been copied.' => 'Таблиці було зкопійовано.',
+
+	'Routines' => 'Збережені процедури',
+	'Routine has been called, %d row(s) affected.' => array('Була викликана процедура, %d запис було змінено.', 'Була викликана процедура, %d записи було змінено.', 'Була викликана процедура, %d записів було змінено.'),
+	'Call' => 'Викликати',
+	'Parameter name' => 'Назва параметра',
+	'Create procedure' => 'Створити процедуру',
+	'Create function' => 'Створити функцію',
+	'Routine has been dropped.' => 'Процедуру було видалено.',
+	'Routine has been altered.' => 'Процедуру було змінено.',
+	'Routine has been created.' => 'Процедуру було створено.',
+	'Alter function' => 'Змінити функцію',
+	'Alter procedure' => 'Змінити процедуру',
+	'Return type' => 'Тип, що повернеться',
+
+	'Events' => 'Події',
+	'Event has been dropped.' => 'Подію було видалено.',
+	'Event has been altered.' => 'Подію було змінено.',
+	'Event has been created.' => 'Подію було створено.',
+	'Alter event' => 'Змінити подію',
+	'Create event' => 'Створити подію',
+	'At given time' => 'В даний час',
+	'Every' => 'Кожного',
+	'Schedule' => 'Розклад',
+	'Start' => 'Початок',
+	'End' => 'Кінець',
+	'On completion preserve' => 'Після завершення зберегти',
+
+	'Tables' => 'Таблиці',
+	'Tables and views' => 'Таблиці і вигляди',
+	'All' => 'Усі', // Claude Opus 5
+	'Table' => 'Таблиця',
+	'No tables.' => 'Нема таблиць.',
+	'Alter table' => 'Змінити таблицю',
+	'Create table' => 'Створити таблицю',
+	'Table has been dropped.' => 'Таблицю було видалено.',
+	'Tables have been dropped.' => 'Таблиці були видалені.',
+	'Tables have been optimized.' => 'Таблиці були оптимізовані.',
+	'Table has been altered.' => 'Таблица була змінена.',
+	'Table has been created.' => 'Таблиця була створена.',
+	'Table name' => 'Назва таблиці',
+	'Show structure' => 'Показати структуру',
+	'engine' => 'рушій',
+	'collation' => 'співставлення',
+	'Column name' => 'Назва стовпця',
+	'Type' => 'Тип',
+	'Length' => 'Довжина',
+	'Auto Increment' => 'Автоматичне збільшення',
+	'Options' => 'Опції',
+	'Comment' => 'Коментарі',
+	'Default values' => 'Значення за замовчуванням',
+	'Drop' => 'Видалити',
+	'Are you sure?' => 'Ви впевнені?',
+	'Remove' => 'Видалити',
+	'Maximum number of allowed fields exceeded. Please increase %s.' => 'Досягнута максимальна кількість доступних полів. Будь ласка, збільшіть %s.',
+
+	'Partition by' => 'Розділити по',
+	'Partitions' => 'Розділи',
+	'Partition name' => 'Назва розділу',
+	'Values' => 'Значення',
+
+	'View' => 'Вигляд',
+	'View has been dropped.' => 'Вигляд було видалено.',
+	'View has been altered.' => 'Вигляд було змінено.',
+	'View has been created.' => 'Вигляд було створено.',
+	'Alter view' => 'Змінити вигляд',
+	'Create view' => 'Створити вигляд',
+
+	'Indexes' => 'Індекси',
+	'Indexes have been altered.' => 'Індексування було змінено.',
+	'Alter indexes' => 'Змінити індексування',
+	'Add next' => 'Додати ще',
+	'Index Type' => 'Тип індексу',
+	'length' => 'довжина',
+	'operator class' => 'клас операторів', // Claude Fable 5
+
+	'Foreign keys' => 'Зовнішні ключі',
+	'Foreign key has been dropped.' => 'Зовнішній ключ було видалено.',
+	'Foreign key has been altered.' => 'Зовнішній ключ було змінено.',
+	'Foreign key has been created.' => 'Зовнішній ключ було створено.',
+	'Target table' => 'Цільова таблиця',
+	'Change' => 'Змінити',
+	'Source' => 'Джерело',
+	'Target' => 'Ціль',
+	'Add column' => 'Додати стовпець',
+	'Alter' => 'Змінити',
+	'Alter foreign key' => 'Змінити зовнішній ключ', // Claude Opus 5
+	'Create foreign key' => 'Створити зовнішній ключ', // Claude Opus 5
+	'ON DELETE' => 'ПРИ ВИДАЛЕННІ',
+	'ON UPDATE' => 'ПРИ ЗМІНІ',
+	'Source and target columns must have the same data type, there must be an index on the target columns and the referenced data must exist.' => 'Стовпці повинні мати той самий тип даних, цільові стовпці повинні бути проіндексовані і дані, на які посилаються повинні існувати.',
+
+	'Triggers' => 'Тригери',
+	'Trigger has been dropped.' => 'Тригер було видалено.',
+	'Trigger has been altered.' => 'Тригер було змінено.',
+	'Trigger has been created.' => 'Тригер було створено.',
+	'Alter trigger' => 'Змінити тригер',
+	'Create trigger' => 'Створити тригер',
+	'Time' => 'Час',
+	'Event' => 'Подія',
+	'Name' => 'Назва',
+
+	'select' => 'вибрати',
+	'Select' => 'Вибрати',
+	'Select data' => 'Вибрати дані',
+	'Functions' => 'Функції',
+	'Aggregation' => 'Агрегація',
+	'Search' => 'Пошук',
+	'anywhere' => 'будь-де',
+	'Search data in tables' => 'Шукати дані в таблицях',
+	'Sort' => 'Сортувати',
+	'descending' => 'по спаданню',
+	'Limit' => 'Обмеження',
+	'Text length' => 'Довжина тексту',
+	'Action' => 'Дія',
+	'Unable to select the table.' => 'Неможливо вибрати таблицю.',
+	'No rows.' => 'Нема рядків.',
+	'%d row(s)' => array('%d рядок', '%d рядки', '%d рядків'),
+	'Page' => 'Сторінка',
+	'last' => 'остання',
+	'Whole result' => 'Весь результат',
+	'%d byte(s)' => array('%d байт', '%d байта', '%d байтів'),
+
+	'Import' => 'Імпортувати',
+	'%d row(s) have been imported.' => array('%d рядок було імпортовано.', '%d рядки було імпортовано.', '%d рядків було імпортовано.'),
+
+	'Ctrl+click on a value to modify it.' => 'Ctrl+клікніть на значенні щоб змінити його.', // in-place editing in select
+	'Use the edit link to modify this value.' => 'Використовуйте посилання щоб змінити це значення.',
+
+	'Item%s has been inserted.' => 'Запис%s було вставлено.', // %s can contain auto-increment value
+	'Item has been deleted.' => 'Запис було видалено.',
+	'Item has been updated.' => 'Запис було змінено.',
+	'%d item(s) have been affected.' => array('Було змінено %d запис.', 'Було змінено %d записи.', 'Було змінено %d записів.'),
+	'New item' => 'Новий запис',
+	'original' => 'початковий',
+	'empty' => 'порожньо', // label for value '' in enum data type
+	'edit' => 'редагувати',
+	'Edit' => 'Редагувати',
+	'Insert' => 'Вставити',
+	'Save' => 'Зберегти',
+	'Save and continue editing' => 'Зберегти і продовжити редагування',
+	'Save and insert next' => 'Зберегти і вставити знову',
+	'Clone' => 'Клонувати',
+	'Delete' => 'Видалити',
+
+	// data type descriptions
+	'Numbers' => 'Числа',
+	'Date and time' => 'Дата і час',
+	'Strings' => 'Рядки',
+	'Binary' => 'Двійкові',
+	'Lists' => 'Списки',
+	'Network' => 'Мережа',
+	'Geometry' => 'Геометрія',
+	'Ranges' => 'Діапазони', // Claude Opus 5
+	'Relations' => 'Зв\'язки',
+
+	'Editor' => 'Редактор',
+	'Data editing in a single PHP file' => 'Редагування даних в одному PHP-файлі', // Claude Opus 5
+	'$1-$3-$5' => '$5.$3.$1', // date format in Editor: $1 yyyy, $2 yy, $3 mm, $4 m, $5 dd, $6 d
+	'[yyyy]-mm-dd' => 'дд.мм.[рррр]', // hint for date format - use language equivalents for day, month and year shortcuts
+	'HH:MM:SS' => 'ГГ:ХХ:СС', // hint for time format - use language equivalents for hour, minute and second shortcuts
+	'now' => 'зараз',
+	'yes' => 'так',
+	'no' => 'ні',
+
+	'File exists.' => 'Файл існує.', // general SQLite error in create, drop or rename database
+	'Please use one of these file extensions: %s.' => 'Будь ласка, використовуйте одне з розширень %s.',
+
+	// PostgreSQL and MS SQL schema support
+	'Alter schema' => 'Змінити схему',
+	'Create schema' => 'Створити схему',
+	'Schema has been dropped.' => 'Схему було видалено.',
+	'Schema has been created.' => 'Схему було створено.',
+	'Schema has been altered.' => 'Схему було змінено.',
+	'Schema' => 'Схема',
+
+	// PostgreSQL sequences support
+	'Sequences' => 'Послідовності',
+	'Create sequence' => 'Створити послідовність',
+	'Sequence has been dropped.' => 'Послідовність було видалено.',
+	'Sequence has been created.' => 'Послідовність було створено.',
+	'Sequence has been altered.' => 'Послідовність було змінено.',
+	'Alter sequence' => 'Змінити послідовність',
+
+	// PostgreSQL user-defined types support
+	'User types' => 'Користувацькі типи', // Claude Fable 5
+	'Create type' => 'Створити тип',
+	'Type has been dropped.' => 'Тип було видалено.',
+	'Type has been created.' => 'Тип було створено.',
+	'Type has been altered.' => 'Тип було змінено.', // Claude Opus 5
+	'Alter type' => 'Змінити тип',
+	'Extensions' => 'Розширення', // Claude Opus 5
+	'Version' => 'Версія', // Claude Opus 5
+	'Drop %s?' => 'Вилучити %s?',
+	'Materialized view' => 'Матеріалізований вигляд',
+	'Selected' => 'Вибрані',
+	'overwrite' => 'перезаписати',
+	'DB' => 'DB',
+	'System%s' => 'Системні%s', // Claude Opus 5
+	'File must be in UTF-8 encoding.' => 'Файл повинен бути в кодуванні UTF-8.',
+	'All rows on this page' => 'Усі рядки на цій сторінці', // Claude Opus 5
+	'Modify' => 'Змінити',
+	'Load more data' => 'Завантажити ще дані',
+	'Loading…' => 'Завантаження…',
+	'%s queries are not supported.' => '%s-запити не підтримуються.',
+	'Warnings' => 'Попередження',
+	'Limit rows' => 'Обмеження рядків',
+	'Adminer does not support accessing a database without a password.' => 'Adminer не підтримує доступ до бази даних без пароля.',
+	'Default value' => 'Значення за замовчуванням',
+	'Full table scan' => 'Повне сканування таблиці',
+	'Too many unsuccessful logins, try again in %d minute(s).' => array('Занадто багато невдалих спроб входу. Спробуйте знову через %d хвилину.', 'Занадто багато невдалих спроб входу. Спробуйте знову через %d хвилини.', 'Занадто багато невдалих спроб входу. Спробуйте знову через %d хвилин.'),
+	'Use the %s <a%s>plugin</a> if Adminer runs behind a reverse proxy.' => 'Використовуйте <a%2$s>плагін</a> %1$s, якщо Adminer працює за зворотним проксі.', // Claude Opus 5
+	'Thanks for using Adminer. Consider <a href="https://www.adminer.org/en/donation/">donating</a>.' => 'Дякуємо, що користуєтесь Adminer, подумайте про <a href="https://www.adminer.org/en/donation/">внесок</a>.',
+	'Master password expired. <a href="https://www.adminer.org/en/extension/"%s>Implement</a> the %s method to make it permanent.' => 'Термін дії майстер пароля минув. <a href="https://www.adminer.org/en/extension/"%s>Реалізуйте</a> метод %s, щоб зробити його постійним.',
+	'The action will be performed after successful login with the same credentials.' => 'Дія буде виконуватися після успішного входу в систему з тими ж обліковими даними.',
+	'Connecting to privileged ports is not allowed.' => 'Підключення до привілейованих портів заборонено.',
+	'There is a space in the entered password, which might be the cause.' => 'У вхідному паролі є пробіл, який може бути причиною.',
+	'If you did not send this request from Adminer, close this page.' => 'Якщо ви не посилали цей запит з Adminer, закрийте цю сторінку.',
+	'Not found.' => 'Не знайдено.', // Claude Opus 5
+	'You can upload a large SQL file via FTP and import it from the server.' => 'Ви можете завантажити великий файл SQL через FTP та імпортувати його з сервера.',
+	'Size' => 'Розмір',
+	'Compute' => 'Обчислити',
+	'You are offline.' => 'Ви офлайн.',
+	'Menu' => 'Меню', // Claude Opus 5
+	'Documentation' => 'Документація', // Claude Opus 5
+	'Database management in a single PHP file' => 'Керування базою даних в одному PHP-файлі', // Claude Opus 5
+	'You have no privileges to update this table.' => 'Ви не маєте привілеїв для оновлення цієї таблиці.',
+	'Saving…' => 'Збереження…',
+	'Unknown error.' => 'Невідома помилка.',
+	'The database does not support passwords.' => 'База даних не підтримує пароль.',
+	'The server accepts any password, so filling it in protects nothing.' => 'Сервер приймає будь-який пароль, тому його введення нічого не захищає.', // Claude Opus 5
+	'Require a password.' => 'Вимагати пароль.', // Claude Opus 5
+	'Save %s next to Adminer to require the entered password:' => 'Збережіть %s поруч з Adminer, щоб вимагався введений пароль:', // Claude Opus 5
+	'Save %s next to Adminer to require the password %s:' => 'Збережіть %s поруч з Adminer, щоб вимагався пароль %s:', // Claude Opus 5
+	'Add this line to %s to require the entered password:' => 'Додайте цей рядок до %s, щоб вимагався введений пароль:', // Claude Opus 5
+	'Add this line to %s to require the password %s:' => 'Додайте цей рядок до %s, щоб вимагався пароль %s:', // Claude Opus 5
+	'More options' => 'Інші можливості', // Claude Opus 5
+	'Require a password verified by Adminer' => 'Вимагає пароль, який перевіряє Adminer', // Claude Opus 5
+	'Disable %s or enable the %s or %s extension.' => 'Вимкніть %s або увімкніть розширення %s або %s.',
+	'Check has been dropped.' => 'Перевірку видалено.',
+	'Check has been altered.' => 'Перевірка змінена.',
+	'Check has been created.' => 'Перевірку створено.',
+	'Alter check' => 'Змінити перевірку',
+	'Create check' => 'Створити перевірку',
+	'Vacuum' => 'Вакуум',
+	'%d / ' => '%d / ',
+	'Checks' => 'Перевірки',
+	'Loaded plugins' => 'Завантажені плагіни',
+	'%s must <a%s>return an array</a>.' => '%s має <a%s>повернути масив</a>.',
+	'<a%s>Configure</a> %s in %s.' => '<a%s>Налаштувати</a> %s у %s.',
+	'Every plugin must <a%s>be an object</a>.' => 'Кожен плагін має <a%s>бути об’єктом</a>.', // Claude Opus 5
+	'Algorithm' => 'Алгоритм', // Claude Fable 5
+	'Columns' => 'Колонки', // Claude Fable 5
+	'Condition' => 'Умова', // Claude Fable 5
+	'Inherits from' => 'Успадковує від', // Claude Fable 5
+	'Inherited by' => 'Успадковується таблицями', // Claude Fable 5
+	'Shadow tables' => 'Тіньові таблиці', // Claude Opus 5
+	'hostname[:port] or :socket' => 'hostname[:port] або :socket', // Claude Fable 5
+	'Invalid server.' => 'Неправильний сервер.', // Claude Fable 5
+	'screenshot' => 'знімок екрана', // Claude Fable 5
+	'Increase %s.' => 'Збільште %s.', // Claude Fable 5
+);
+
+// run `php ../../lang.php uk` to update this file

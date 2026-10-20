@@ -1,0 +1,103 @@
+<?php
+
+/** Require One-Time Password at login
+* @link https://www.adminer.org/plugins/otp/
+* @author Jakub Vrana, https://www.vrana.cz/
+* @license https://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+* @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License, version 2 (one or other)
+*/
+class AdminerLoginOtp extends Adminer\Plugin {
+	protected $secret;
+
+	/**
+	* @param string $secret decoded secret, e.g. base64_decode("SECRET")
+	*/
+	function __construct($secret) {
+		$this->secret = $secret;
+		if ($_POST["auth"]) {
+			$_SESSION["otp"] = (string) $_POST["auth"]["otp"];
+			if (!$this->otpValid()) {
+				unset($_POST["auth"]["permanent"]); // the permanent login is created before verifying the OTP and it would skip it forever
+			}
+		}
+	}
+
+	function loginFormField($name, $heading, $value) {
+		if ($name == 'password') {
+			return $heading . $value . "\n"
+				. "<tr><th><abbr title='" . $this->lang('One Time Password') . "'>OTP</abbr>"
+				. "<td><input type='number' name='auth[otp]' value='" . Adminer\h($_SESSION["otp"]) . "' size='6' autocomplete='one-time-code' inputmode='numeric' maxlength='6' pattern='\d{6}'>\n"
+			;
+		}
+	}
+
+	function login($login, $password) {
+		if (isset($_SESSION["otp"])) {
+			if ($this->otpValid()) {
+				Adminer\restart_session();
+				unset($_SESSION["otp"]);
+				Adminer\stop_session();
+				return;
+			}
+			return $this->lang('Invalid OTP.');
+		}
+	}
+
+	/** Check the OTP sent by the login form */
+	private function otpValid() {
+		$timeSlot = floor(time() / 30);
+		foreach (array(0, -1, 1) as $skew) {
+			if (isset($_SESSION["otp"]) && $_SESSION["otp"] == $this->getOtp($timeSlot + $skew)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function getOtp($timeSlot) {
+		$data = str_pad(pack('N', $timeSlot), 8, "\0", STR_PAD_LEFT);
+		$hash = hash_hmac('sha1', $data, $this->secret, true);
+		$offset = ord(substr($hash, -1)) & 0xF;
+		$unpacked = unpack('N', substr($hash, $offset, 4));
+		return ($unpacked[1] & 0x7FFFFFFF) % 1e6;
+	}
+
+	function screenshot() {
+		return "https://www.adminer.org/static/login-otp.png";
+	}
+
+	protected $translations = array(
+		'cs' => array(
+			'' => 'Při přihlášení požaduje jednorázové heslo',
+			'One Time Password' => 'Jednorázové heslo',
+			'Invalid OTP.' => 'Neplatné jednorázové heslo.',
+		),
+		'de' => array(
+			'' => 'Bei der Anmeldung ist ein Einmalpasswort (Zwei-Faktor-Authentifizierung) erforderlich',
+			'One Time Password' => 'Einmal-Passwort',
+			'Invalid OTP.' => 'Ungültiger OTP.',
+		),
+		'hr' => array(
+			'' => 'Jednokratna lozinka (dvofaktorska autentifikacija) potrebna pri prijavi',
+			'One Time Password' => 'Jednokratna lozinka',
+			'Invalid OTP.' => 'Nevažeća jednokratna lozinka.',
+		),
+		'ja' => array(
+			'' => 'ログイン時にワンタイムパスワード (二要素認証) が必要',
+		),
+		'pl' => array(
+			'' => 'Wymagaj jednorazowego hasła przy logowaniu',
+		),
+		'ro' => array(
+			'' => 'Cereți o parolă unică la autentificare',
+		),
+		'sk' => array(
+			'' => 'Pri prihlásení vyžaduje jednorazové heslo', // Claude Opus 5
+		),
+		'zh' => array(
+			'' => '登录时要求一次性密码', // Claude Opus 5
+			'One Time Password' => '一次性密码', // Claude Opus 5
+			'Invalid OTP.' => '一次性密码无效。', // Claude Opus 5
+		),
+	);
+}

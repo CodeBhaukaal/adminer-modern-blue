@@ -1,0 +1,404 @@
+<?php
+namespace Adminer;
+
+if (!$error && $_POST["export"]) {
+	save_settings(array("output" => $_POST["output"], "format" => $_POST["format"]), "adminer_import");
+	dump_headers("sql");
+	if ($_POST["format"] == "sql") {
+		echo "$_POST[query]\n";
+	} else {
+		adminer()->dumpTable("", "");
+		adminer()->dumpData("", "table", $_POST["query"]);
+		adminer()->dumpFooter();
+	}
+	exit;
+}
+
+if (!$error && $_POST["val"]) { // modified by Ctrl+click in the result, the button name is not sent by the implicit submission
+	$affected = 0;
+	$success = true;
+	$cells = array(); // data-name => HTML of the stored value
+	$rows_count = 0;
+	foreach ($_POST["val"] as $rows) {
+		$rows_count += count($rows);
+	}
+	$begin = $rows_count > 1 && driver()->begin();
+	foreach ($_POST["val"] as $table_idf => $rows) {
+		$table = bracket_escape($table_idf, true); // true - back
+		$fields = fields($table);
+		$table_indexes = indexes($table);
+		foreach ($rows as $idf => $row) {
+			parse_str(bracket_escape($idf, true), $where); // true - back
+			$unique = array();
+			foreach ($where["where"] as $key => $val) {
+				$unique[bracket_escape($key, true)] = $val; // true - back
+			}
+			// the condition must identify a single row, otherwise the UPDATE would affect the other ones
+			if (!$fields || $where["null"] || array_diff_key($unique, $fields) || !unique_array($unique, $table_indexes)) {
+				$success = false;
+				break 2;
+			}
+			$set = array();
+			$select = array(); // column identifier in the request => column name
+			foreach ($row as $key_idf => $val) {
+				$key = bracket_escape($key_idf, true); // true - back
+				$field = idx($fields, $key);
+				if (!$field) { // the column is offered only if it exists so this is a forged request
+					$success = false;
+					break 3;
+				}
+				// a generated column and a missing privilege are reported by the database
+				$set[idf_escape($key)] = (preg_match('~char|text~', $field["type"]) || $val != "" ? adminer()->processInput($field, $val) : "NULL");
+				$select[$key_idf] = $key;
+			}
+			$query_where = where($where, $fields);
+			if (!driver()->update($table, $set, " WHERE $query_where", 0, " ")) { // no limit, the condition is unique
+				$success = false;
+				break 2;
+			}
+			$affected += connection()->affected_rows;
+			// read the values back, the database can silently modify them, e.g. a date or a too long string
+			$columns = array();
+			foreach ($select as $key) {
+				$columns[] = idf_escape($key);
+			}
+			$updated = driver()->select($table, $columns, array($query_where), $columns);
+			$new_row = ($updated ? $updated->fetch_row() : array());
+			$j = 0;
+			foreach ($select as $key_idf => $key) {
+				$field = $fields[$key];
+				// the same stub as in print_select_result()
+				$stub = array('type' => (preg_match('~binary~', $field["type"]) ? 'blob' : $field["type"]));
+				$cells["val[$table_idf][$idf][$key_idf]"] = select_value(idx($new_row, $j++), "", $stub, null);
+			}
+		}
+	}
+	if ($begin && $success) {
+		$success = driver()->commit();
+	}
+	queries_redirect(null, lang('%d item(s) have been affected.', $affected), $success);
+	if ($begin && !$success) {
+		driver()->rollback(); // after queries_redirect() to not overwrite error
+	}
+	// the values are sent only by sqlSave() so the response is always processed by JavaScript
+	page_headers();
+	page_messages($error);
+	foreach ($cells as $name => $val) {
+		echo "<div data-name='" . h($name) . "' hidden>$val</div>\n";
+	}
+	exit;
+}
+
+restart_session();
+$history_all = &get_session("queries");
+$history = &$history_all[DB];
+if (!$error && $_POST["clear"]) {
+	$history = array();
+	redirect(remove_from_uri("history"));
+}
+stop_session();
+
+$adminer_export = get_settings("adminer_import"); // match settings in select, not in dump
+if ($_POST && $adminer_export) { //! delete on 2026-09-26
+	save_settings($adminer_export, "adminer_import"); // drop HttpOnly set by older versions so that JS export can write the cookie
+}
+
+page_header((isset($_GET["import"]) ? lang('Import') : lang('SQL command')), $error);
+$line_comment = driver()->lineComment();
+
+if (!$error && $_POST && !(isset($_GET["import"]) && adminer()->importProcess())) {
+	$delimiter = driver()->delimiter;
+	$fp = false;
+	if (!isset($_GET["import"])) {
+		$query = $_POST["query"];
+	} elseif ($_POST["webfile"]) {
+		$sql_file_path = adminer()->importServerPath();
+		$fp = @fopen((file_exists($sql_file_path)
+			? $sql_file_path
+			: "compress.zlib://$sql_file_path.gz"
+		), "rb");
+		$query = ($fp ? fread($fp, 1e6) : false);
+	} else {
+		$query = get_file("sql_file", true, $delimiter);
+	}
+
+	if (is_string($query)) { // get_file() returns error as number, fread() as false
+		if (($memory_limit = ini_bytes("memory_limit")) != "-1") {
+			ini_set("memory_limit", max($memory_limit, strval(2 * strlen($query) + memory_get_usage() + 8e6))); // 2 - substr and trim, 8e6 - other variables
+		}
+
+		if ($query != "" && strlen($query) < 1e6) { // don't add big queries
+			$q = $query . (preg_match("~$delimiter\\s*\$~", $query) ? "" : $delimiter); //! doesn't work with DELIMITER |
+			if (!$history || first(end($history)) != $q) { // no repeated queries
+				restart_session();
+				$history[] = array($q, time()); //! add elapsed time
+				set_session("queries", $history_all); // required because reference is unlinked by stop_session()
+				stop_session();
+			}
+		}
+
+		$space = "(?:\\s|\xEF\xBB\xBF|/\\*[\s\S]*?\\*/|(?:$line_comment)[^\n]*\n?|--\r?\n)"; // BOM - SQLite skips it
+		$offset = 0;
+		$empty = true;
+		$copy = false; // PostgreSQL COPY ... FROM stdin
+		$connection2 = connect(); // connection for exploring indexes and EXPLAIN (to not replace FOUND_ROWS()) //! PDO - silent error
+		if ($connection2 && DB != "") {
+			$connection2->select_db(DB);
+			if ($_GET["ns"] != "") {
+				set_schema($_GET["ns"], $connection2);
+			}
+		}
+		$commands = 0;
+		$errors = array();
+		$parse = '[\'"' . (JUSH == "sql" ? '`' : (JUSH == "sqlite" ? '`[' : (JUSH == "mssql" ? '[' : ''))) . ']|/\*|' . $line_comment . '|$' . (JUSH == "pgsql" ? '|\$([a-zA-Z]\w*)?\$' : '');
+		$total_start = microtime(true);
+
+		while ($query != "") {
+			if (!$offset && preg_match("~^$space*+DELIMITER\\s+(\\S+)~i", $query, $match)) {
+				$delimiter = preg_quote($match[1]);
+				$query = substr($query, strlen($match[0]));
+			} elseif (!$offset && JUSH == 'pgsql' && preg_match("~^($space*+COPY\\s+)[^;]+\\s+FROM\\s+stdin;~i", $query, $match)) {
+				$delimiter = "\n\\\\\\.\r?\n";
+				$copy = true;
+				$offset = strlen($match[0]);
+			} else {
+				preg_match("($delimiter\\s*|$parse)", $query, $match, PREG_OFFSET_CAPTURE, $offset); // always matches
+				list($found, $pos) = $match[0];
+				if (!$found && $fp && !feof($fp)) {
+					$query .= fread($fp, 1e5);
+				} else {
+					if (!$found && rtrim($query) == "") {
+						break;
+					}
+					$offset = $pos + strlen($found);
+
+					if ($found && !preg_match("(^$delimiter)", $found)) { // find matching quote or comment end
+						$c_style_escapes = driver()->hasCStyleEscapes() || (JUSH == "pgsql" && ($pos > 0 && strtolower($query[$pos - 1]) == "e"));
+
+						$pattern =
+							($found == '/*' ? '\*/' :
+							($found == '[' ? ']' :
+							(preg_match("~^(?:$line_comment)~", $found) ? "\n" :
+							preg_quote($found) . ($c_style_escapes ? '|\\\\.' : ''))))
+						;
+
+						while (preg_match("($pattern|\$)s", $query, $match, PREG_OFFSET_CAPTURE, $offset)) {
+							$s = $match[0][0];
+							if (!$s && $fp && !feof($fp)) {
+								$query .= fread($fp, 1e5);
+							} else {
+								$offset = $match[0][1] + strlen($s);
+								if (!$s || $s[0] != "\\") {
+									break;
+								}
+							}
+						}
+
+					} else { // end of a query
+						$q = substr($query, 0, $pos + ($copy ? 3 : 0)); // 3 - pass "\n\\." to PostgreSQL COPY
+						$query = substr($query, $offset);
+						$offset = 0;
+						if ($copy) { // the COPY delimiter is valid only for the single query
+							$delimiter = driver()->delimiter;
+							$copy = false;
+						}
+						$code = "<code class='jush-" . JUSH . "'>" . adminer()->sqlCommandQuery($q) . "</code>";
+						if (preg_match("~^$space*+\$~", $q) && !preg_match('~/\*M?!~', $q)) { // non-executable comment
+							echo ($_POST["only_errors"] ? "" : "<pre>$code</pre>\n");
+							continue;
+						}
+						$empty = false;
+						$commands++;
+						$print = "<pre id='sql-$commands'>$code</pre>\n";
+						if (JUSH == "sqlite" && preg_match("~^$space*+(ATTACH|VACUUM\\b.*\\bINTO)\\b~is", $q, $match) !== 0) {
+							// PHP doesn't support setting SQLITE_LIMIT_ATTACHED
+							echo $print;
+							echo "<p class='error'>" . lang('%s queries are not supported.', preg_match('~ATTACH~i', $match[1]) ? 'ATTACH' : 'VACUUM INTO') . "\n";
+							$errors[] = " <a href='#sql-$commands'>$commands</a>";
+							if ($_POST["error_stops"]) {
+								break;
+							}
+						} else {
+							if (!$_POST["only_errors"]) {
+								echo $print;
+								ob_flush();
+								flush(); // can take a long time - show the running query
+							}
+							$start = microtime(true);
+							//! don't allow changing of character_set_results, convert encoding of displayed query
+							if (connection()->multi_query($q) && $connection2 && preg_match("~^$space*+USE\\b~i", $q)) {
+								$connection2->query($q);
+							}
+
+							do {
+								$result = connection()->store_result();
+
+								if (connection()->error) {
+									echo ($_POST["only_errors"] ? $print : "");
+									echo "<p class='error'>" . lang('Error in query') . (connection()->errno ? " (" . connection()->errno . ")" : "") . ": " . adminer()->error() . "\n";
+									$errors[] = " <a href='#sql-$commands'>$commands</a>";
+									if ($_POST["error_stops"]) {
+										break 2;
+									}
+
+								} else {
+									$link = ME . "sql=" . url_escape(trim($q));
+									$time = " <span class='time'>(" . format_time($start) . ")</span>"
+										// 100 - the expected length of the origin counted by sqlSubmit()
+										. (strlen($link) < adminer()->sqlUrlLength() - 100 ? " <a href='" . h($link) . "'>" . lang('Edit') . "</a>" : "")
+									;
+									$affected = connection()->affected_rows; // getting warnings overwrites this
+									$warnings = ($_POST["only_errors"] ? "" : driver()->warnings());
+									$warnings_id = "warnings-$commands";
+									if ($warnings) {
+										$time .= ", <a href='#$warnings_id' class='toggle'>" . lang('Warnings') . "</a>";
+									}
+									$explain = "";
+									$explain_id = "explain-$commands";
+									if (is_object($result)) {
+										$limit = $_POST["limit"];
+										$num_rows = $limit;
+										$edit = !$_POST["only_errors"]; // the values can be modified only if the Save button is printed
+										if ($edit) {
+											// the result must be inside the form to send the modified values
+											echo "<form action='' method='post'>\n";
+										}
+										$orgtables = print_select_result($result, $connection2, array(), $num_rows, $edit);
+										if (!$_POST["only_errors"]) {
+											$num_rows = max($result->num_rows, $num_rows); // native num_rows holds the count before LIMIT
+											echo "<p class='sql-footer'>" . ($num_rows ? ($limit && $num_rows > $limit ? lang('%d / ', $limit) : "") . lang('%d row(s)', $num_rows) : "");
+											echo $time;
+											if ($connection2 && preg_match("~^($space|\\()*+SELECT\\b~i", $q) && ($explain = adminer()->explain($connection2, $q, $orgtables)) != "") {
+												echo ", <a href='#$explain_id' class='toggle'>Explain</a>";
+											}
+											if ($edit) { // at least one value can be modified
+												// the button must precede the export button, the implicit submission uses the first one
+												echo ", <input type='submit' name='save' value='" . lang('Save') . "' class='jsonly' disabled"
+													. " title='" . lang('Ctrl+click on a value to modify it.') . "'" . on('click', 'sqlSave', lang('Saving…')) . ">"
+												;
+											}
+											$id = "export-$commands";
+											echo ", <a href='#$id' class='toggle'>" . lang('Export') . "</a><span id='$id' class='hidden'>: "
+												. html_select("output", adminer()->dumpOutput(), $adminer_export["output"]) . " "
+												. html_select("format", adminer()->dumpFormat(), $adminer_export["format"])
+												. input_hidden("query", $q)
+												. "<input type='submit' name='export' value='" . lang('Export') . "'"
+												. ($limit ? "" : on('click', 'sqlExport')) . ">" // JS export requires all rows in the table
+												. input_token() . "</span>\n"
+												. "</form>\n"
+											;
+										}
+
+									} else {
+										if (preg_match("~^$space*+(CREATE|DROP|ALTER)$space++(DATABASE|SCHEMA)\\b~i", $q)) {
+											restart_session();
+											set_session("dbs", null); // clear cache
+											stop_session();
+										}
+										if (!$_POST["only_errors"]) {
+											echo "<p class='message' title='" . h(connection()->info) . "'>" . lang('Query executed OK, %d row(s) affected.', $affected) . "$time\n";
+										}
+									}
+									echo ($warnings ? "<div id='$warnings_id' class='hidden'>\n$warnings</div>\n" : "");
+									echo ($explain != "" ? "<div id='$explain_id' class='hidden explain'>\n$explain</div>\n" : "");
+								}
+
+								$start = microtime(true);
+							} while (connection()->next_result());
+						}
+					}
+
+				}
+			}
+		}
+
+		if ($empty) {
+			echo "<p class='message'>" . lang('No commands to execute.') . "\n";
+		} else {
+			$in_transaction = connection()->inTransaction(); // ROLLBACK doesn't report whether it did anything
+			driver()->rollback(); // an unfinished transaction would break the following queries (e.g. in the menu)
+			if ($in_transaction) {
+				echo "<pre><code class='jush-" . JUSH . "'>ROLLBACK" . (JUSH == "mssql" ? " TRANSACTION" : "") . " -- Adminer</code></pre>\n"; // print even with only_errors - the data was discarded
+			}
+			if ($_POST["only_errors"]) {
+				echo "<p class='message'>" . lang('%d query(ies) executed OK.', $commands - count($errors));
+				echo " <span class='time'>(" . format_time($total_start) . ")</span>\n";
+			} elseif ($errors && $commands > 1) {
+				echo "<p class='error'>" . lang('Error in query') . ": " . implode("", $errors) . "\n";
+			}
+		}
+		//! MS SQL - SET SHOWPLAN_ALL OFF
+
+	} else {
+		echo "<p class='error'>" . upload_error($query) . "\n";
+	}
+}
+?>
+
+<form action="" method="post" enctype="multipart/form-data" id="form"<?php
+$upload_progress = "";
+if (!isset($_GET["import"])) {
+	echo on('submit', 'sqlSubmit', remove_from_uri("sql|limit|error_stops|only_errors|history"), adminer()->sqlUrlLength());
+} else {
+	echo on_upload_progress($upload_progress);
+}
+?>>
+<?php
+$execute = "<input type='submit' value='" . lang('Execute') . "' title='Ctrl+Enter'>";
+if (!isset($_GET["import"])) {
+	$q = $_GET["sql"]; // overwrite $q from if ($_POST) to save memory
+	if ($_POST) {
+		$q = $_POST["query"];
+	} elseif ($_GET["history"] == "all") {
+		$q = $history;
+	} elseif ($_GET["history"] != "") {
+		$q = idx($history[$_GET["history"]], 0);
+	}
+	echo "<p>";
+	textarea("query", $q, 20);
+	echo ($_POST ? "" : script("qs('textarea').focus();"));
+	echo "<p>";
+	adminer()->sqlPrintAfter();
+	echo "$execute\n";
+	echo lang('Limit rows') . ": <input type='number' name='limit' class='size' value='" . h($_POST ? $_POST["limit"] : $_GET["limit"]) . "'>\n";
+
+} else {
+	$gz = (extension_loaded("zlib") ? "[.gz]" : "");
+	echo "<fieldset><legend>" . lang('File upload') . "</legend><div>";
+	echo ($upload_progress ? input_hidden(ini_get("session.upload_progress.name"), $upload_progress) : ""); // the field must precede the file field, https://www.php.net/session.upload-progress
+	echo "SQL$gz: " . file_input(" name='sql_file[]' multiple", "\n$execute");
+	echo ($upload_progress ? " <progress class='jsonly hidden' max='1' value='0'></progress>" : "");
+	echo "</div></fieldset>\n";
+	$importServerPath = adminer()->importServerPath();
+	if ($importServerPath) {
+		echo "<fieldset><legend>" . lang('From server') . "</legend><div>";
+		echo lang('Webserver file %s', "<code>" . h($importServerPath) . "$gz</code>");
+		echo " <input type='submit' name='webfile' value='" . lang('Run file') . "'>";
+		echo "</div></fieldset>\n";
+	}
+	adminer()->importPrint();
+	echo "<p>";
+}
+
+echo checkbox("error_stops", 1, ($_POST ? $_POST["error_stops"] : isset($_GET["import"]) || $_GET["error_stops"]), lang('Stop on error')) . "\n";
+echo checkbox("only_errors", 1, ($_POST ? $_POST["only_errors"] : isset($_GET["import"]) || $_GET["only_errors"]), lang('Show only errors')) . "\n";
+echo input_token();
+
+if (!isset($_GET["import"]) && $history) {
+	print_fieldset("history", lang('History'), $_GET["history"] != "");
+	for ($val = end($history); $val; $val = prev($history)) { // not array_reverse() to save memory
+		$key = key($history);
+		list($q, $time, $elapsed) = $val;
+		echo '<div><a href="' . h(ME . "sql=&history=$key") . '" class="hover">' . lang('Edit') . "</a>"
+			. " <span class='time' title='" . @date('Y-m-d', $time) . "'>" . @date("H:i:s", $time) . "</span>" // @ - time zone may be not set
+			. " <code class='jush-" . JUSH . "'>" . shorten_utf8(preg_replace('~\s+~', ' ', ltrim(preg_replace("~^(?:$line_comment).*~m", '', $q))), 80, "</code>")
+			. ($elapsed ? " <span class='time'>($elapsed)</span>" : "")
+			. "</div>\n"
+		;
+	}
+	echo "<input type='submit' name='clear' value='" . lang('Clear') . "'>\n";
+	echo "<a href='" . h(ME . "sql=&history=all") . "'>" . lang('Edit all') . "</a>\n";
+	echo "</div></fieldset>\n";
+}
+?>
+</form>
