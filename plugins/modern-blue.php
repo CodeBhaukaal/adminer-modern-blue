@@ -50,7 +50,7 @@ class AdminerModernBlue extends Adminer\Plugin {
 
 	function head($dark = null) {
 		$strings = array();
-		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK') as $key) {
+		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK', 'Edit', 'Copy', 'Delete', 'Browse', 'Insert', 'Empty', 'Drop', 'Tip: double-click a cell to edit it, then press Save.') as $key) {
 			$strings[$key] = $this->lang($key);
 		}
 		// mb-preload hides the workspace until modern-blue.js animates it in, CSS reveals it anyway if the script fails
@@ -99,9 +99,21 @@ class AdminerModernBlue extends Adminer\Plugin {
 	function tableStructurePrint($fields, $tableStatus = null) {
 		$comment = Adminer\support("comment");
 		$user_types = (Adminer\support("type") ? Adminer\types() : array());
+		$table = $_GET["table"];
+		$alter = ($table != "" && function_exists('Adminer\alter_table') && !Adminer\is_view((array) $tableStatus));
+		$link = Adminer\h(Adminer\ME) . "%s=" . Adminer\h(Adminer\url_escape($table));
+		if ($alter) {
+			echo "<p class='mb-structure-tools'>";
+			echo "<a class='mb-tool mb-tool-insert' href='" . sprintf($link, "create") . "'><span>" . $this->lang('Add or change columns') . "</span></a>";
+			echo (Adminer\support("indexes") ? "<a class='mb-tool mb-tool-structure' href='" . sprintf($link, "indexes") . "'><span>" . $this->lang('Indexes') . "</span></a>" : "");
+			echo (Adminer\support("fkeys") ? "<a class='mb-tool mb-tool-alter' href='" . sprintf($link, "foreign") . "'><span>" . $this->lang('Add foreign key') . "</span></a>" : "");
+			echo "<a class='mb-tool mb-tool-copy' href='" . sprintf($link, "edit") . "'><span>" . $this->lang('Insert row') . "</span></a>";
+			echo "<a class='mb-tool mb-tool-browse' href='" . sprintf($link, "select") . "'><span>" . $this->lang('Browse') . "</span></a>";
+			echo "</p>\n";
+		}
 		echo "<div class='scrollable'>\n<table class='nowrap odds mb-structure'>\n<thead><tr><th>#<th>" . $this->lang('Column') . "<th>" . $this->lang('Type')
 			. "<th>" . $this->lang('Collation') . "<th>" . $this->lang('Null') . "<th>" . $this->lang('Default') . "<th>" . $this->lang('Extra')
-			. ($comment ? "<th>" . $this->lang('Comment') : "") . "<tbody>\n";
+			. ($comment ? "<th>" . $this->lang('Comment') : "") . ($alter ? "<th>" . $this->lang('Action') : "") . "<tbody>\n";
 		$i = 0;
 		foreach ($fields as $field) {
 			$type = Adminer\h($field["full_type"]);
@@ -128,6 +140,7 @@ class AdminerModernBlue extends Adminer\Plugin {
 			);
 			echo "<td class='mb-muted'>" . implode(", ", $extra);
 			echo ($comment ? "<td>" . Adminer\adminer()->commentValue('COLUMN', $field["comment"]) : "");
+			echo ($alter ? "<td class='mb-row-tools'><a class='mb-tool mb-tool-edit' href='" . sprintf($link, "create") . "' title='" . Adminer\h($this->lang('Change') . ": " . $field["field"]) . "'><span>" . $this->lang('Change') . "</span></a>" : "");
 			echo "\n";
 		}
 		echo "</table>\n</div>\n";
@@ -214,6 +227,19 @@ class AdminerModernBlue extends Adminer\Plugin {
 			'error' => 'त्रुटि',
 			'errors' => 'त्रुटियाँ',
 			'OK' => 'सफल',
+			'Edit' => 'संपादित करें',
+			'Copy' => 'कॉपी',
+			'Delete' => 'हटाएँ',
+			'Browse' => 'देखें',
+			'Insert' => 'जोड़ें',
+			'Empty' => 'खाली करें',
+			'Drop' => 'मिटाएँ',
+			'Tip: double-click a cell to edit it, then press Save.' => 'टिप: सेल बदलने के लिए डबल-क्लिक करें, फिर Save दबाएँ।',
+			'Change' => 'बदलें',
+			'Add or change columns' => 'कॉलम जोड़ें या बदलें',
+			'Indexes' => 'इंडेक्स',
+			'Add foreign key' => 'फ़ॉरेन की जोड़ें',
+			'Insert row' => 'नई row जोड़ें',
 			'Column' => 'कॉलम',
 			'Type' => 'प्रकार',
 			'Collation' => 'कोलेशन',

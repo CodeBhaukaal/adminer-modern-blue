@@ -217,7 +217,45 @@
 		}, counter);
 	}
 
-	/** Add Select, Structure and Alter links to every row of the table list */
+	/** Create an icon button
+	* @param {string} kind edit, copy, delete, browse, structure, insert, alter, empty, drop
+	* @param {string} label
+	* @param {string} [href]
+	* @return {HTMLElement}
+	*/
+	function tool(kind, label, href) {
+		const node = el(href ? 'a' : 'button', {'class': 'mb-tool mb-tool-' + kind, 'title': label, 'aria-label': label});
+		if (href) {
+			node.setAttribute('href', href);
+		} else {
+			node.type = 'button';
+			// the click on a row would toggle its checkbox
+			node.addEventListener('click', event => event.stopPropagation());
+		}
+		node.appendChild(el('span', {}, label));
+		return node;
+	}
+
+	/** Check only one row of a checkable table and press a submit button of its form, Adminer asks for confirmation itself
+	* @param {HTMLTableRowElement} row
+	* @param {HTMLInputElement} button
+	*/
+	function actOnRow(row, button) {
+		const table = row.closest('table');
+		Array.prototype.forEach.call(table.querySelectorAll('tbody input[type="checkbox"]'), input => {
+			const want = (input.closest('tr') === row);
+			if (input.checked !== want) {
+				input.click(); // updates the highlighting and the counters
+			}
+		});
+		const all = button.form.querySelector('input[name="all"][type="checkbox"]');
+		if (all && all.checked) {
+			all.click();
+		}
+		button.click();
+	}
+
+	/** Browse, Structure, Insert, Alter, Empty and Drop on every row of the table list */
 	function setupRowActions() {
 		if (!body.classList.contains('mb-page-db')) {
 			return;
@@ -226,24 +264,83 @@
 		if (!table || !table.tHead || !table.tBodies[0]) {
 			return;
 		}
-		const headRow = table.tHead.rows[0];
-		headRow.appendChild(el('th', {}, t('Action')));
+		const form = table.closest('form');
+		const truncate = form.querySelector('input[name="truncate"]');
+		const drop = form.querySelector('input[name="drop"]');
+		table.tHead.rows[0].appendChild(el('th', {'class': 'mb-tools-head'}, t('Action')));
 		Array.prototype.forEach.call(table.tBodies[0].rows, row => {
-			const cell = el('td', {'class': 'mb-row-actions'});
-			const structure = row.querySelector('th a[href*="table="]');
-			if (structure) {
+			const cell = el('td', {'class': 'mb-row-tools'});
+			const structure = row.querySelector('th a[href*="table="], th a[href*="view="]');
+			const checkbox = row.querySelector('input[type="checkbox"]');
+			if (structure && checkbox) {
 				const href = structure.getAttribute('href');
-				const name = structure.textContent;
-				const select = el('a', {'href': href.replace(/([?&])table=/, '$1select='), 'title': t('Select data') + ': ' + name}, t('Select'));
-				const show = el('a', {'href': href, 'title': t('Show structure') + ': ' + name}, t('Structure'));
-				cell.appendChild(select);
-				cell.appendChild(show);
-				if (!/[?&]view=/.test(href)) {
-					cell.appendChild(el('a', {'href': href.replace(/([?&])table=/, '$1create='), 'title': t('Alter table') + ': ' + name}, t('Alter')));
+				const isView = /[?&]view=/.test(href) || checkbox.name === 'views[]';
+				const base = href.replace(/([?&])(table|view)=/, '$1table=');
+				cell.appendChild(tool('browse', t('Browse'), base.replace(/([?&])table=/, '$1select=')));
+				cell.appendChild(tool('structure', t('Structure'), base));
+				if (!isView) {
+					cell.appendChild(tool('insert', t('Insert'), base.replace(/([?&])table=/, '$1edit=')));
+					cell.appendChild(tool('alter', t('Alter'), base.replace(/([?&])table=/, '$1create=')));
+					if (truncate) {
+						const empty = tool('empty', t('Empty'));
+						empty.addEventListener('click', () => actOnRow(row, truncate));
+						cell.appendChild(empty);
+					}
+				}
+				if (drop) {
+					const remove = tool('drop', t('Drop'));
+					remove.addEventListener('click', () => actOnRow(row, drop));
+					cell.appendChild(remove);
 				}
 			}
 			row.appendChild(cell);
 		});
+	}
+
+	/** Edit, Copy and Delete buttons on every row of the select page and editing a cell by double click */
+	function setupSelectRowTools() {
+		const table = content && content.querySelector('table#table');
+		if (!table || !table.tHead || !table.tBodies[0]) {
+			return;
+		}
+		const form = table.closest('form');
+		const clone = form.querySelector('input[name="clone"]');
+		const remove = form.querySelector('input[name="delete"]');
+		const editable = !!form.querySelector('#save');
+		table.tHead.rows[0].appendChild(el('th', {'class': 'mb-tools-head'}, t('Action')));
+		Array.prototype.forEach.call(table.tBodies[0].rows, row => {
+			const cell = el('td', {'class': 'mb-row-tools'});
+			const edit = row.querySelector('a.edit');
+			if (edit) {
+				edit.classList.add('mb-tool', 'mb-tool-edit');
+				edit.title = t('Edit');
+				cell.appendChild(tool('edit', t('Edit'), edit.getAttribute('href')));
+				if (clone) {
+					const copy = tool('copy', t('Copy'));
+					copy.addEventListener('click', () => actOnRow(row, clone));
+					cell.appendChild(copy);
+				}
+				if (remove) {
+					const del = tool('delete', t('Delete'));
+					del.addEventListener('click', () => actOnRow(row, remove));
+					cell.appendChild(del);
+				}
+			}
+			row.appendChild(cell);
+		});
+		if (editable) {
+			// Adminer edits a cell by Ctrl+click, a double click is easier to discover
+			table.addEventListener('dblclick', event => {
+				const td = event.target.closest('td[id^="val["]');
+				if (td && !td.querySelector('input, textarea') && !event.target.closest('a')) {
+					getSelection().removeAllRanges();
+					td.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, ctrlKey: true, metaKey: true}));
+				}
+			});
+			const hint = el('p', {'class': 'mb-hint'}, t('Tip: double-click a cell to edit it, then press Save.'));
+			const scrollable = table.closest('.scrollable') || table;
+			scrollable.parentNode.insertBefore(hint, scrollable);
+		}
 	}
 
 	/** Turn the sections of the table structure page into tabs */
@@ -674,6 +771,7 @@
 			setupSidebarFilter();
 			setupListFilter();
 			setupRowActions();
+			setupSelectRowTools();
 			setupTabs();
 			setupPagination();
 			setupSelectForm();

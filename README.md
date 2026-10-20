@@ -26,7 +26,12 @@ Same Adminer engine underneath: every query, login, export and import still goes
 - **Table structure** – tabs for *Columns / Indexes / Foreign keys / Checks / Triggers* with counters, plus a detailed column grid (type, collation, null, default, extra, comment, `PK` badge).
 - **Select data** – search and sort right in the toolbar, compact limit fields, readable rows, horizontal scroll for wide tables.
 - **SQL editor** – line numbers, focus ring, and **errors in red**: the failed statement, the message, the editor border and a `✕ 1 error` badge next to the heading (a green `✓ OK` badge when all statements pass).
-- **Search boxes** above the database and table lists, plus *Select / Structure / Alter* links on every table row.
+- **phpMyAdmin-style row actions with icons** (shown only when the user has the permission):
+  - every data row: ✏️ **Edit**, 📄 **Copy**, 🗑️ **Delete** – the action column stays visible while scrolling wide tables
+  - **double-click any cell to edit it in place**, then press *Save*
+  - every table in a database: 👁️ **Browse**, ☰ **Structure**, ➕ **Insert**, ✏️ **Alter**, 🧹 **Empty**, 🗑️ **Drop** (with Adminer's confirmation)
+  - table structure: **Add or change columns**, **Indexes**, **Add foreign key**, **Insert row**, **Browse**, and **Change** on every column
+- **Search boxes** above the database and table lists.
 - **Motion animations** – staggered page entrance, row cascade, spring login card, sliding tab indicator, a hover pill following the sidebar tables, button ripples and press springs, error shake, count-up numbers, scroll reveal, top loading bar, animated mobile drawer.
 - **Responsive** – 1440 px down to 320 px; on phones the sidebar becomes a drawer with backdrop and <kbd>Esc</kbd> to close.
 - **Accessible & light** – respects *reduce motion*, keeps keyboard navigation, works without JavaScript, no external fonts, icons or CDN.
@@ -123,6 +128,8 @@ All colors are CSS variables at the top of [`modern-blue.css`](plugins/modern-bl
 | Table structure tabs | ✅ | ✅ |
 | Select, search, sort, pagination | ✅ | ✅ |
 | Insert, edit, delete rows | ✅ | ✅ |
+| Row Edit / Copy / Delete buttons, double-click inline edit | ✅ | ✅ |
+| Table Browse / Insert / Alter / Empty / Drop buttons | ✅ | ✅ |
 | SQL command, results, red errors | ✅ | ✅ |
 | Export (SQL) | ✅ | ✅ |
 | Import (SQL file) | ✅ | – |
