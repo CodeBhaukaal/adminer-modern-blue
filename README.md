@@ -31,9 +31,11 @@ Same Adminer engine underneath: every query, login, export and import still goes
   - **double-click any cell to edit it in place**, then press *Save*
   - every table in a database: 👁️ **Browse**, ☰ **Structure**, ➕ **Insert**, ✏️ **Alter**, 🧹 **Empty**, 🗑️ **Drop** (with Adminer's confirmation)
   - table structure: **Add or change columns**, **Indexes**, **Add foreign key**, **Insert row**, **Browse**, and **Change** on every column
+- **Quick action cards** on the server and database pages – Users & privileges, Process list, Variables, Status, Database schema, Routines, Events.
+- **Export any single table** from its row, and a **Copy** button on every executed SQL statement.
 - **Search boxes** above the database and table lists.
 - **Motion animations** – staggered page entrance, row cascade, spring login card, sliding tab indicator, a hover pill following the sidebar tables, button ripples and press springs, error shake, count-up numbers, scroll reveal, top loading bar, animated mobile drawer.
-- **Responsive** – 1440 px down to 320 px; on phones the sidebar becomes a drawer with backdrop and <kbd>Esc</kbd> to close.
+- **Responsive on every screen** – checked automatically at 1440, 1024, 768, 390 and 320 px on 11 screens with zero horizontal overflow; wide tables scroll inside their own box, action buttons shrink to icons, forms stack on phones, and the sidebar becomes a drawer with backdrop and <kbd>Esc</kbd> to close.
 - **Accessible & light** – respects *reduce motion*, keeps keyboard navigation, works without JavaScript, no external fonts, icons or CDN.
 
 ## 📸 Screenshots

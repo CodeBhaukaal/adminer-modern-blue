@@ -281,6 +281,7 @@
 				if (!isView) {
 					cell.appendChild(tool('insert', t('Insert'), base.replace(/([?&])table=/, '$1edit=')));
 					cell.appendChild(tool('alter', t('Alter'), base.replace(/([?&])table=/, '$1create=')));
+					cell.appendChild(tool('export', t('Export'), base.replace(/([?&])table=/, '$1dump=')));
 					if (truncate) {
 						const empty = tool('empty', t('Empty'));
 						empty.addEventListener('click', () => actOnRow(row, truncate));
@@ -659,6 +660,55 @@
 		});
 	}
 
+	/** Let wide tables scroll inside their own box instead of widening the page */
+	function wrapTables() {
+		Array.prototype.forEach.call(content.querySelectorAll('table:not(.layout)'), table => {
+			if (!table.closest('.scrollable, table.layout, #schema, .message, .error, td') && table.offsetParent) {
+				const wrap = el('div', {'class': 'scrollable mb-wrap'});
+				table.parentNode.insertBefore(wrap, table);
+				wrap.appendChild(table);
+			}
+		});
+	}
+
+	/** Quick action cards on the server and database pages */
+	function setupCards() {
+		if (!body.classList.contains('mb-page-server') && !body.classList.contains('mb-page-db')) {
+			return;
+		}
+		const links = leadingLinks();
+		if (links) {
+			links.classList.add('mb-cards');
+			children(links, 'a').forEach(a => {
+				const label = a.textContent;
+				a.textContent = '';
+				a.appendChild(el('span', {'class': 'mb-card-icon', 'aria-hidden': 'true'}));
+				a.appendChild(el('span', {'class': 'mb-card-label'}, label));
+			});
+			animate(children(links, 'a'), {opacity: [0, 1], y: [12, 0], scale: [0.96, 1]}, {duration: 0.4, delay: stagger(0.05, {startDelay: 0.15}), ease: ease});
+		}
+	}
+
+	/** Copy buttons on the executed SQL statements */
+	function setupCopySql() {
+		if (!navigator.clipboard) {
+			return;
+		}
+		Array.prototype.forEach.call(content.querySelectorAll('#content > pre, #content > .message pre'), pre => {
+			const code = pre.querySelector('code') || pre;
+			const button = tool('copy', t('Copy'));
+			button.classList.add('mb-copy-sql');
+			button.addEventListener('click', () => {
+				navigator.clipboard.writeText(code.textContent).then(() => {
+					button.lastChild.textContent = '✓';
+					setTimeout(() => button.lastChild.textContent = t('Copy'), 1200);
+				}, () => {});
+			});
+			pre.classList.add('mb-has-copy');
+			pre.appendChild(button);
+		});
+	}
+
 	/** Animate the first rows of the tables in an element */
 	function animateRows(scope) {
 		if (!Motion || !scope) {
@@ -766,6 +816,7 @@
 
 	try {
 		if (!isLogin && content) {
+			wrapTables();
 			setupTopbar();
 			setupCta();
 			setupSidebarFilter();
@@ -776,6 +827,8 @@
 			setupPagination();
 			setupSelectForm();
 			setupSqlGutter();
+			setupCards();
+			setupCopySql();
 		}
 		if (content) {
 			if (!isLogin) {
