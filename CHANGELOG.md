@@ -1,6 +1,6 @@
 ## Adminer 6.1.3-dev
 ### Plugins
-- New plugin modern-blue: Navy sidebar, light workspace, login card, icon actions on rows and tables (edit, copy, delete, empty, drop), double-click editing and animations by the bundled Motion library
+- New plugin modern-blue: Navy sidebar with recent tables and a collapsible icon rail, 8 colour templates saved per browser, login card, icon actions on rows and tables, double-click editing and animations by the bundled Motion library
 
 ## Adminer 6.1.2 (released 2026-10-10)
 - Select: Quote again the quoted values of IN

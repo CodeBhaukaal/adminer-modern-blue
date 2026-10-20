@@ -50,11 +50,14 @@ class AdminerModernBlue extends Adminer\Plugin {
 
 	function head($dark = null) {
 		$strings = array();
-		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK', 'Edit', 'Copy', 'Delete', 'Browse', 'Insert', 'Empty', 'Drop', 'Tip: double-click a cell to edit it, then press Save.') as $key) {
+		foreach (array('Search databases…', 'Search tables…', 'Action', 'Select', 'Structure', 'Alter', 'Select data', 'Show structure', 'Alter table', 'Columns', 'error', 'errors', 'OK', 'Edit', 'Copy', 'Delete', 'Browse', 'Insert', 'Empty', 'Drop', 'Tip: double-click a cell to edit it, then press Save.', 'Export', 'Color theme', 'Saved in this browser.', 'Ocean Blue', 'Emerald', 'Violet', 'Sunset', 'Rose', 'Graphite', 'Daylight', 'Midnight (dark)', 'Database', 'Database & schema', 'Tools', 'Tables', 'Recent', 'Press', 'to search tables', 'Collapse sidebar', 'Expand sidebar') as $key) {
 			$strings[$key] = $this->lang($key);
 		}
 		// mb-preload hides the workspace until modern-blue.js animates it in, CSS reveals it anyway if the script fails
-		echo Adminer\script(($this->motion ? "document.documentElement.classList.add('mb-preload');\n" : "")
+		// the colour template and the collapsed sidebar are chosen per browser, apply them before the first paint
+		echo Adminer\script("try {\n\tvar mbTheme = localStorage.getItem('mb-theme');\n\tif (mbTheme) {\n\t\tdocument.documentElement.setAttribute('data-mb-theme', mbTheme);\n\t}\n"
+			. "\tif (localStorage.getItem('mb-collapsed')) {\n\t\tdocument.documentElement.classList.add('mb-collapsed');\n\t}\n} catch (e) {\n}\n"
+			. ($this->motion ? "document.documentElement.classList.add('mb-preload');\n" : "")
 			. "var mbStrings = " . json_encode($strings) . ";");
 		if ($this->motion) {
 			echo Adminer\script_src($this->asset("motion.min.js"), true);
@@ -240,6 +243,26 @@ class AdminerModernBlue extends Adminer\Plugin {
 			'Indexes' => 'इंडेक्स',
 			'Add foreign key' => 'फ़ॉरेन की जोड़ें',
 			'Insert row' => 'नई row जोड़ें',
+			'Export' => 'एक्सपोर्ट',
+			'Color theme' => 'रंग थीम',
+			'Saved in this browser.' => 'इस ब्राउज़र में सेव रहेगा।',
+			'Ocean Blue' => 'ओशन ब्लू',
+			'Emerald' => 'एमरल्ड',
+			'Violet' => 'वायलेट',
+			'Sunset' => 'सनसेट',
+			'Rose' => 'रोज़',
+			'Graphite' => 'ग्रेफ़ाइट',
+			'Daylight' => 'डेलाइट',
+			'Midnight (dark)' => 'मिडनाइट (डार्क)',
+			'Database' => 'डेटाबेस',
+			'Database & schema' => 'डेटाबेस और स्कीमा',
+			'Tools' => 'टूल्स',
+			'Tables' => 'टेबल',
+			'Recent' => 'हाल ही में',
+			'Press' => 'दबाएँ',
+			'to search tables' => 'टेबल खोजने के लिए',
+			'Collapse sidebar' => 'साइडबार छोटा करें',
+			'Expand sidebar' => 'साइडबार बड़ा करें',
 			'Column' => 'कॉलम',
 			'Type' => 'प्रकार',
 			'Collation' => 'कोलेशन',

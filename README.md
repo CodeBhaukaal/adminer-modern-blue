@@ -20,7 +20,9 @@ Same Adminer engine underneath: every query, login, export and import still goes
 
 ## ✨ Highlights
 
-- **Dashboard layout** – fixed navy sidebar with the server link, database (and schema) switcher, live table search and table list; a top bar with breadcrumb and the main actions.
+- **🎨 8 colour templates** – Ocean Blue, Emerald, Violet, Sunset, Rose, Graphite, Daylight (light sidebar) and Midnight (full dark mode). Pick one from the palette button in the top bar (also on the login page); the choice is saved in the browser and applied before the page paints, so there is no flash.
+- **Smart sidebar** – section labels (Database, Tools, Tables with a count), live table search with the <kbd>/</kbd> shortcut, **recently opened tables**, a hover pill following the mouse, a clear active-table marker, a sticky header, and a **collapse button** that turns the sidebar into a slim icon rail (remembered per browser).
+- **Dashboard layout** – sidebar with the server link, database (and schema) switcher and table list; a top bar with breadcrumb and the main actions.
 - **Login card** – centered card on a soft blue backdrop, labels above the fields, clear red error box.
 - **Data grids** – rounded cards, sticky headers, zebra rows, hover highlight, inline `edit` chips, page-number chips.
 - **Table structure** – tabs for *Columns / Indexes / Foreign keys / Checks / Triggers* with counters, plus a detailed column grid (type, collation, null, default, extra, comment, `PK` badge).
@@ -37,6 +39,18 @@ Same Adminer engine underneath: every query, login, export and import still goes
 - **Motion animations** – staggered page entrance, row cascade, spring login card, sliding tab indicator, a hover pill following the sidebar tables, button ripples and press springs, error shake, count-up numbers, scroll reveal, top loading bar, animated mobile drawer.
 - **Responsive on every screen** – checked automatically at 1440, 1024, 768, 390 and 320 px on 11 screens with zero horizontal overflow; wide tables scroll inside their own box, action buttons shrink to icons, forms stack on phones, and the sidebar becomes a drawer with backdrop and <kbd>Esc</kbd> to close.
 - **Accessible & light** – respects *reduce motion*, keeps keyboard navigation, works without JavaScript, no external fonts, icons or CDN.
+
+## 🎨 Colour templates
+
+<img src="docs/modern-blue/theme-picker.png" alt="Theme picker" width="900">
+
+| Emerald | Violet | Sunset |
+|---|---|---|
+| <img src="docs/modern-blue/theme-emerald.png" alt="Emerald"> | <img src="docs/modern-blue/theme-violet.png" alt="Violet"> | <img src="docs/modern-blue/theme-sunset.png" alt="Sunset"> |
+| **Daylight** | **Midnight (dark)** | **Collapsed sidebar** |
+| <img src="docs/modern-blue/theme-daylight.png" alt="Daylight"> | <img src="docs/modern-blue/theme-midnight.png" alt="Midnight"> | <img src="docs/modern-blue/sidebar-collapsed.png" alt="Collapsed sidebar"> |
+
+Adding your own template is a few lines of CSS – copy one `html[data-mb-theme="…"]` block in [`modern-blue.css`](plugins/modern-blue/modern-blue.css), change the colours, and add it to the `themes` list in [`modern-blue.js`](plugins/modern-blue/modern-blue.js).
 
 ## 📸 Screenshots
 

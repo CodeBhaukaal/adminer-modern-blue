@@ -99,6 +99,12 @@
 			const span = el('span', {'class': 'mb-crumb-current'}, last.textContent.trim());
 			breadcrumb.replaceChild(span, last);
 		}
+		// the crumbs shrink with an ellipsis so that the actions always fit
+		const crumbs = el('span', {'class': 'mb-crumbs'});
+		while (breadcrumb.firstChild) {
+			crumbs.appendChild(breadcrumb.firstChild);
+		}
+		breadcrumb.appendChild(crumbs);
 		const actions = el('span', {'class': 'mb-actions'});
 		const links = leadingLinks();
 		if (links && links.querySelector('a[href*="select="]') && links.querySelector('a[href*="table="]')) {
@@ -709,6 +715,248 @@
 		});
 	}
 
+	/** Read or write a value in localStorage, which may be unavailable */
+	function store(key, value) {
+		try {
+			if (value === undefined) {
+				return localStorage.getItem(key);
+			}
+			if (value === null) {
+				localStorage.removeItem(key);
+			} else {
+				localStorage.setItem(key, value);
+			}
+		} catch (e) {
+			// private mode or blocked storage, the choice lasts only for this page
+		}
+		return null;
+	}
+
+	// [id, name, sidebar, page, brand, line]
+	const themes = [
+		['ocean', 'Ocean Blue', '#132d50', '#f5f8fd', '#1769e8', '#dbe5f1'],
+		['emerald', 'Emerald', '#0f2e26', '#f4faf7', '#059669', '#d3e7dd'],
+		['violet', 'Violet', '#241a45', '#f7f5fd', '#7c3aed', '#e2dcf3'],
+		['sunset', 'Sunset', '#3a1d10', '#fdf8f4', '#ea580c', '#f1e1d4'],
+		['rose', 'Rose', '#3b1220', '#fdf6f8', '#e11d48', '#f1dbe1'],
+		['graphite', 'Graphite', '#111827', '#f6f7f9', '#475569', '#e2e6ec'],
+		['daylight', 'Daylight', '#ffffff', '#f5f8fd', '#1769e8', '#dbe5f1'],
+		['midnight', 'Midnight (dark)', '#0a1120', '#0b1220', '#3b82f6', '#24324a'],
+	];
+
+	/** Apply a colour template */
+	function applyTheme(id) {
+		if (id && id !== 'ocean') {
+			root.setAttribute('data-mb-theme', id);
+		} else {
+			root.removeAttribute('data-mb-theme');
+		}
+		const meta = doc.querySelector('meta[name="theme-color"]');
+		const theme = themes.filter(item => item[0] === (id || 'ocean'))[0];
+		if (meta && theme) {
+			meta.content = theme[2];
+		}
+	}
+
+	/** The palette button with the colour templates */
+	function setupThemePicker() {
+		const wrap = el('span', {'class': 'mb-theme-wrap'});
+		const button = el('button', {'type': 'button', 'class': 'mb-theme-btn', 'title': t('Color theme'), 'aria-label': t('Color theme'), 'aria-haspopup': 'true', 'aria-expanded': 'false'});
+		const menu = el('div', {'class': 'mb-theme-menu', 'role': 'dialog', 'aria-label': t('Color theme')});
+		menu.hidden = true;
+		menu.appendChild(el('p', {'class': 'mb-theme-title'}, t('Color theme')));
+		const grid = el('div', {'class': 'mb-theme-grid', 'role': 'radiogroup'});
+		const current = store('mb-theme') || 'ocean';
+		themes.forEach(theme => {
+			const option = el('button', {'type': 'button', 'class': 'mb-theme-option', 'role': 'radio', 'aria-checked': String(theme[0] === current), 'data-theme': theme[0]});
+			option.style.setProperty('--sw-brand', theme[4]);
+			option.style.setProperty('--sw-line', theme[5]);
+			const swatch = el('span', {'class': 'mb-swatch'});
+			const side = el('i');
+			const page = el('i');
+			side.style.background = theme[2];
+			page.style.background = theme[3];
+			swatch.appendChild(side);
+			swatch.appendChild(page);
+			option.appendChild(swatch);
+			option.appendChild(doc.createTextNode(t(theme[1])));
+			if (theme[0] === current) {
+				option.appendChild(el('span', {'class': 'mb-theme-check'}));
+			}
+			grid.appendChild(option);
+		});
+		menu.appendChild(grid);
+		menu.appendChild(el('p', {'class': 'mb-theme-note'}, t('Saved in this browser.')));
+		wrap.appendChild(button);
+		wrap.appendChild(menu);
+
+		const toggle = open => {
+			menu.hidden = !open;
+			button.setAttribute('aria-expanded', open);
+			if (open) {
+				animate(menu, {opacity: [0, 1], scale: [0.94, 1], y: [-6, 0]}, {type: 'spring', stiffness: 420, damping: 30});
+				animate(menu.querySelectorAll('.mb-theme-option'), {opacity: [0, 1], y: [6, 0]}, {duration: 0.25, delay: stagger(0.025)});
+			}
+		};
+		button.addEventListener('click', event => {
+			event.stopPropagation();
+			toggle(menu.hidden);
+		});
+		menu.addEventListener('click', event => {
+			event.stopPropagation();
+			const option = event.target.closest('.mb-theme-option');
+			if (!option) {
+				return;
+			}
+			const id = option.getAttribute('data-theme');
+			store('mb-theme', id === 'ocean' ? null : id);
+			Array.prototype.forEach.call(grid.children, item => {
+				const checked = (item === option);
+				item.setAttribute('aria-checked', checked);
+				const check = item.querySelector('.mb-theme-check');
+				if (check && !checked) {
+					check.remove();
+				} else if (!check && checked) {
+					item.appendChild(el('span', {'class': 'mb-theme-check'}));
+				}
+			});
+			applyTheme(id);
+			animate(body, {opacity: [0.85, 1]}, {duration: 0.35});
+			animate(option.querySelector('.mb-theme-check'), {scale: [0, 1]}, {type: 'spring', stiffness: 500, damping: 18});
+		});
+		doc.addEventListener('click', () => !menu.hidden && toggle(false));
+		doc.addEventListener('keydown', event => {
+			if (event.key === 'Escape' && !menu.hidden) {
+				toggle(false);
+				button.focus();
+			}
+		});
+		if (breadcrumb) {
+			breadcrumb.appendChild(wrap);
+		} else {
+			body.appendChild(wrap);
+		}
+	}
+
+	/** Section labels, recently opened tables, collapsing and the / shortcut in the sidebar */
+	function setupSidebar() {
+		if (!menu || isLogin) {
+			return;
+		}
+		const label = (cls, text, count) => {
+			const node = el('div', {'class': 'mb-sb-label ' + cls});
+			node.appendChild(el('span', {}, text));
+			if (count != null) {
+				node.appendChild(el('span', {'class': 'mb-sb-count'}, String(count)));
+			}
+			return node;
+		};
+		const dbs = doc.getElementById('dbs');
+		if (dbs) {
+			menu.insertBefore(label('mb-sb-label-db', t(doc.querySelector('#dbs select[name="ns"]') ? 'Database & schema' : 'Database')), dbs.closest('form') || dbs);
+		}
+		const tools = children(menu, 'p.links')[0];
+		if (tools) {
+			menu.insertBefore(label('mb-sb-label-tools', t('Tools')), tools);
+		}
+		const list = doc.getElementById('tables');
+		const filter = menu.querySelector('.mb-table-filter');
+		if (list) {
+			const items = children(list, 'li');
+			const tablesLabel = label('mb-sb-label-tables', t('Tables'), items.length);
+			menu.insertBefore(tablesLabel, filter || list);
+
+			// recently opened tables of this database
+			const key = 'mb-recent:' + location.pathname + ':' + (location.search.match(/[?&](server|pgsql|sqlite|mssql|oracle|elastic|mongo|clickhouse)=[^&]*/) || [''])[0] + ':' + dbName();
+			let recent = [];
+			try {
+				recent = JSON.parse(store(key) || '[]');
+			} catch (e) {
+				recent = [];
+			}
+			const names = {};
+			items.forEach(li => {
+				const a = li.querySelector('a:not(.select)');
+				if (a) {
+					names[a.textContent] = li;
+				}
+			});
+			const active = list.querySelector('a.active:not(.select)') || (list.querySelector('a.select.active') && list.querySelector('a.select.active').nextElementSibling);
+			if (active && !body.classList.contains('mb-page-db')) {
+				recent = [active.textContent].concat(recent.filter(name => name !== active.textContent)).slice(0, 5);
+				store(key, JSON.stringify(recent));
+			}
+			const shown = recent.filter(name => names[name] && (!active || name !== active.textContent)).slice(0, 4);
+			if (shown.length && items.length > 6) {
+				const ul = el('ul', {'class': 'mb-recent'});
+				shown.forEach(name => {
+					const a = names[name].querySelector('a.select') || names[name].querySelector('a');
+					const li = el('li');
+					const link = el('a', {'href': a.getAttribute('href'), 'title': name});
+					link.appendChild(doc.createTextNode(name));
+					li.appendChild(link);
+					ul.appendChild(li);
+				});
+				menu.insertBefore(label('mb-sb-label-recent', t('Recent')), tablesLabel);
+				menu.insertBefore(ul, tablesLabel);
+			}
+			if (filter) {
+				const hint = el('div', {'class': 'mb-sb-shortcut'});
+				hint.appendChild(doc.createTextNode(t('Press') + ' '));
+				hint.appendChild(el('kbd', {}, '/'));
+				hint.appendChild(doc.createTextNode(' ' + t('to search tables')));
+				menu.insertBefore(hint, list);
+			}
+		}
+		// / focuses the table search
+		doc.addEventListener('keydown', event => {
+			const input = doc.getElementById('mb-table-filter');
+			if (event.key === '/' && input && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest('input, textarea, select, [contenteditable]')) {
+				event.preventDefault();
+				if (innerWidth <= 800 && doc.getElementById('foot').classList.contains('foot')) {
+					menuToggle();
+				}
+				root.classList.remove('mb-collapsed');
+				input.focus();
+				input.select();
+			}
+		});
+		// collapse to an icon rail
+		const h1 = menu.querySelector('h1');
+		if (h1) {
+			const collapse = el('button', {'type': 'button', 'class': 'mb-collapse-btn'});
+			const sync = () => {
+				const collapsed = root.classList.contains('mb-collapsed');
+				const text = t(collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+				collapse.title = text;
+				collapse.setAttribute('aria-label', text);
+				collapse.setAttribute('aria-pressed', collapsed);
+			};
+			collapse.addEventListener('click', () => {
+				const collapsed = root.classList.toggle('mb-collapsed');
+				store('mb-collapsed', collapsed ? '1' : null);
+				sync();
+				if (!collapsed) {
+					animate(menu.querySelectorAll('.mb-sb-label, #dbs, .mb-table-filter, #tables li, .mb-recent li'), {opacity: [0, 1], x: [-10, 0]}, {duration: 0.3, delay: stagger(0.02, {startDelay: 0.12})});
+				}
+			});
+			sync();
+			h1.appendChild(collapse);
+		}
+		// links in the icon rail need a tooltip
+		Array.prototype.forEach.call(menu.querySelectorAll('.mb-nav a, p.links a'), a => {
+			if (!a.title) {
+				a.title = a.textContent.trim();
+			}
+		});
+	}
+
+	/** Name of the current database from the URL */
+	function dbName() {
+		const match = /[?&]db=([^&]*)/.exec(location.search);
+		return (match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '');
+	}
+
 	/** Animate the first rows of the tables in an element */
 	function animateRows(scope) {
 		if (!Motion || !scope) {
@@ -818,6 +1066,7 @@
 		if (!isLogin && content) {
 			wrapTables();
 			setupTopbar();
+			setupSidebar();
 			setupCta();
 			setupSidebarFilter();
 			setupListFilter();
@@ -842,6 +1091,7 @@
 		if (isLogin) {
 			setupErrors();
 		}
+		setupThemePicker();
 		setupProgress();
 		setupRipple();
 		watchMessages();
